@@ -21,6 +21,25 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" suppressHydrationWarning className="h-full antialiased">
+      <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+              try {
+                var savedColor = localStorage.getItem('accent-color');
+                if (savedColor) {
+                  var root = document.documentElement;
+                  root.style.setProperty('--primary', savedColor);
+                  root.style.setProperty('--ring', savedColor);
+                  root.style.setProperty('--sidebar-primary', savedColor);
+                  root.style.setProperty('--sidebar-ring', savedColor);
+                  root.style.setProperty('--primary-foreground', '#ffffff');
+                }
+              } catch (e) {}
+            `,
+          }}
+        />
+      </head>
       <body style={{ fontFamily: "var(--font-sans), sans-serif" }} className={`${inter.variable} min-h-full flex flex-col font-sans bg-background text-foreground`}>
         <ThemeProvider
           attribute="class"

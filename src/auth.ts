@@ -26,13 +26,13 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           where: { email: credentials.email as string },
         })
 
-        if (!user || !user.passwordHash) {
+        if (!user || !user.password) {
           return null
         }
 
         const isPasswordValid = await compare(
           credentials.password as string,
-          user.passwordHash
+          user.password
         )
 
         if (!isPasswordValid) {
@@ -47,12 +47,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id
+        // Add role to token
+        token.role = (user as any).role || "USER"
       }
       return token
     },
     async session({ session, token }) {
       if (token && session.user) {
         session.user.id = token.id as string
+        // Add role to session
+        ;(session.user as any).role = token.role as string
       }
       return session
     },

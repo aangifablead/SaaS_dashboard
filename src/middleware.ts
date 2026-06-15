@@ -1,27 +1,55 @@
 import NextAuth from "next-auth"
 import authConfig from "@/auth.config"
 
-const { auth } = NextAuth({
-  ...authConfig,
-  callbacks: {
-    authorized({ auth, request: { nextUrl } }) {
-      const isLoggedIn = !!auth?.user
-      const isOnDashboard = nextUrl.pathname.startsWith('/dashboard') || nextUrl.pathname.startsWith('/org')
-      
-      if (isOnDashboard) {
-        if (isLoggedIn) return true
-        return false // Redirect unauthenticated users to login page
-      } else if (isLoggedIn && (nextUrl.pathname === '/login' || nextUrl.pathname === '/register')) {
-        return Response.redirect(new URL('/dashboard', nextUrl))
-      }
-      
-      return true
-    },
-  },
+const { auth } = NextAuth(authConfig)
+
+const publicRoutes = [
+  '/',
+  '/login',
+  '/register',
+  '/forgot-password',
+  '/billing/success',
+  '/join',
+  '/docs',
+  '/api/webhooks/stripe',
+  '/new-password'
+]
+
+export default auth((req) => {
+  const { nextUrl } = req
+  const isLoggedIn = !!req.auth
+  const userRole = (req.auth?.user as any)?.role || "USER"
+
+  const isPublicRoute = publicRoutes.includes(nextUrl.pathname)
+  const isAuthRoute = nextUrl.pathname === '/login' || nextUrl.pathname === '/register' || nextUrl.pathname === '/forgot-password'
+  const isDashboardRoute = nextUrl.pathname.startsWith('/dashboard') || nextUrl.pathname.startsWith('/org') || nextUrl.pathname.startsWith('/settings') || nextUrl.pathname.startsWith('/billing') || nextUrl.pathname.startsWith('/analytics')
+  const isAdminRoute = nextUrl.pathname.startsWith('/admin')
+
+  // 1. If accessing auth routes (login/register) while logged in -> redirect to /dashboard
+  if (isAuthRoute && isLoggedIn) {
+    return Response.redirect(new URL('/dashboard', nextUrl))
+  }
+
+  // 2. If accessing admin routes without ADMIN role -> redirect to /dashboard
+  if (isAdminRoute) {
+    if (!isLoggedIn) {
+      return Response.redirect(new URL('/login', nextUrl))
+    }
+    if (userRole !== "ADMIN") {
+      return Response.redirect(new URL('/dashboard', nextUrl))
+    }
+    return // allow
+  }
+
+  // 3. If accessing protected routes without login -> redirect to /login
+  if (isDashboardRoute && !isLoggedIn) {
+    return Response.redirect(new URL('/login', nextUrl))
+  }
+
+  return // allow
 })
 
-export default auth
-
+// Optionally, don't invoke Middleware on some paths
 export const config = {
   matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
 }

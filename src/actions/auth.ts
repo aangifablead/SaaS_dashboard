@@ -17,18 +17,19 @@ export async function registerUser(formData: FormData) {
   })
 
   if (existingUser) {
-    throw new Error("User already exists")
+    throw new Error("This account already exists. Please login instead.")
   }
 
   const passwordHash = await hash(password, 10)
 
-  const user = await prisma.user.create({
-    data: {
+    const data = {
       name,
       email,
-      passwordHash,
-    },
-  })
+      password: passwordHash,
+    }
+    const user = await prisma.user.create({
+      data,
+    })
 
   return { success: true, userId: user.id }
 }
