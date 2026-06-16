@@ -5,16 +5,27 @@ import { Download, Plus, IndianRupee, Users, Activity, Zap, ChevronDown, MoreHor
 import { DashboardRevenueChart, DashboardPlanChart, SparklineChart } from "@/components/dashboard-charts"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Link from "next/link"
+import { auth } from "@/auth"
 
-export default function DashboardPage() {
+export default async function DashboardPage() {
+  const session = await auth()
+  const userName = session?.user?.name?.split(" ")[0] || "User"
+  
+  const hour = new Date().getHours()
+  let greeting = "Good evening"
+  if (hour < 12) greeting = "Good morning"
+  else if (hour < 18) greeting = "Good afternoon"
+
+  const dateOptions: Intl.DateTimeFormatOptions = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }
+  const today = new Date().toLocaleDateString('en-US', dateOptions)
   return (
     <div className="flex flex-col gap-8 pb-8">
       {/* 1. PAGE HEADER */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Good morning, John 👋</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">{greeting}, {userName} 👋</h1>
           <p className="text-muted-foreground mt-1 text-sm md:text-base">
-            Here's what's happening with your business today
+            {today}
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -211,7 +222,7 @@ export default function DashboardPage() {
         <Card className="lg:col-span-2 shadow-sm flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between pb-4">
             <CardTitle className="text-base font-semibold">Recent Transactions</CardTitle>
-            <Link href="/billing">
+            <Link href="/dashboard/billing">
               <Button variant="link" className="text-sm text-primary h-auto p-0 font-medium">View all</Button>
             </Link>
           </CardHeader>
@@ -271,7 +282,7 @@ export default function DashboardPage() {
         <Card className="shadow-sm flex flex-col">
           <CardHeader className="flex flex-row items-center justify-between pb-4">
             <CardTitle className="text-base font-semibold">Recent Activity</CardTitle>
-            <Link href="/analytics">
+            <Link href="/dashboard/analytics">
               <Button variant="link" className="text-sm text-primary h-auto p-0 font-medium">View all</Button>
             </Link>
           </CardHeader>

@@ -13,6 +13,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { signOut } from "next-auth/react"
+import Link from "next/link"
 
 export function UserNav({ user }: { user: { name?: string | null; email?: string | null; image?: string | null } }) {
   const initials = user?.name
@@ -37,13 +38,17 @@ export function UserNav({ user }: { user: { name?: string | null; email?: string
           </div>
         </div>
         <DropdownMenuGroup>
-          <DropdownMenuItem onClick={() => window.location.href = '/settings'} className="cursor-pointer">
-            Settings
-            <DropdownMenuShortcut>⌘S</DropdownMenuShortcut>
+          <DropdownMenuItem render={<Link href="/dashboard/settings" />} className="cursor-pointer">
+            Profile Settings
+            <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>
           </DropdownMenuItem>
-          <DropdownMenuItem onClick={() => window.location.href = '/billing'} className="cursor-pointer">
+          <DropdownMenuItem render={<Link href="/dashboard/billing" />} className="cursor-pointer">
             Billing
             <DropdownMenuShortcut>⌘B</DropdownMenuShortcut>
+          </DropdownMenuItem>
+          <DropdownMenuItem className="cursor-pointer">
+            Keyboard shortcuts
+            <DropdownMenuShortcut>⌘K</DropdownMenuShortcut>
           </DropdownMenuItem>
         </DropdownMenuGroup>
         <DropdownMenuSeparator />

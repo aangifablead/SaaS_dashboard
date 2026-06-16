@@ -10,7 +10,9 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel,
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Checkbox } from "@/components/ui/checkbox"
 import { Switch } from "@/components/ui/switch"
-import { Search, Plus, Download, MoreHorizontal, Filter, ChevronLeft, ChevronRight } from "lucide-react"
+import { Search, Plus, Download, MoreHorizontal, Filter, ChevronLeft, ChevronRight, Mail, UserPlus, XCircle } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog"
+import { Label } from "@/components/ui/label"
 
 const usersData = [
   { id: "1", name: "Olivia Martin", email: "olivia.martin@email.com", role: "Admin", plan: "Enterprise", planColor: "bg-[#faf5ff] text-[#a855f7]", status: true, joined: "Oct 24, 2026", lastActive: "Just now" },
@@ -47,16 +49,50 @@ export default function UsersPage() {
       {/* HEADER */}
       <div className="flex flex-col gap-4 md:flex-row md:items-center justify-between">
         <div className="flex items-center gap-3">
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Users</h1>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Team Members</h1>
           <Badge variant="secondary" className="bg-primary/10 text-primary border-none rounded-full px-3 py-1 font-semibold text-sm">
             12,234 total
           </Badge>
         </div>
         <div className="flex items-center gap-3">
-          <Button className="gap-2 shadow-sm">
-            <Plus className="h-4 w-4" />
-            Add User
-          </Button>
+          <Dialog>
+            <DialogTrigger render={<Button className="gap-2 shadow-sm" />}>
+              <UserPlus className="h-4 w-4" />
+              Invite Member
+            </DialogTrigger>
+            <DialogContent className="sm:max-w-[425px]">
+              <DialogHeader>
+                <DialogTitle>Invite Team Member</DialogTitle>
+                <DialogDescription>
+                  Send an email invitation to join your workspace.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid gap-2">
+                  <Label htmlFor="email">Email address</Label>
+                  <Input id="email" placeholder="name@example.com" className="col-span-3 shadow-sm bg-background" />
+                </div>
+                <div className="grid gap-2">
+                  <Label htmlFor="role">Role</Label>
+                  <Select defaultValue="member">
+                    <SelectTrigger className="shadow-sm bg-background">
+                      <SelectValue placeholder="Select a role" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin</SelectItem>
+                      <SelectItem value="member">Member</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="submit" className="w-full gap-2 shadow-sm">
+                  <Mail className="h-4 w-4" />
+                  Send Invite
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </div>
       </div>
 
@@ -195,10 +231,8 @@ export default function UsersPage() {
                   <TableCell className="text-sm text-muted-foreground">{user.lastActive}</TableCell>
                   <TableCell>
                     <DropdownMenu>
-                      <DropdownMenuTrigger asChild>
-                        <Button variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground">
-                          <MoreHorizontal className="h-4 w-4" />
-                        </Button>
+                      <DropdownMenuTrigger render={<Button variant="ghost" className="h-8 w-8 p-0 text-muted-foreground hover:text-foreground" />}>
+                        <MoreHorizontal className="h-4 w-4" />
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end" className="w-[160px] rounded-xl shadow-lg border-border">
                         <DropdownMenuItem className="cursor-pointer font-medium">View Profile</DropdownMenuItem>
@@ -237,6 +271,47 @@ export default function UsersPage() {
             </Button>
           </div>
         </div>
+      </Card>
+
+      {/* PENDING INVITES SECTION */}
+      <h3 className="text-lg font-semibold text-foreground mt-4 -mb-2">Pending Invites</h3>
+      <Card className="shadow-sm border-border">
+        <CardContent className="p-0">
+          <Table>
+            <TableHeader>
+              <TableRow className="border-b border-border bg-accent/30">
+                <TableHead className="text-xs font-semibold text-muted-foreground h-11 pl-6">Email Address</TableHead>
+                <TableHead className="text-xs font-semibold text-muted-foreground h-11">Role</TableHead>
+                <TableHead className="text-xs font-semibold text-muted-foreground h-11">Status</TableHead>
+                <TableHead className="text-xs font-semibold text-muted-foreground h-11">Sent On</TableHead>
+                <TableHead className="w-[100px]"></TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {[
+                { email: "alex.new@example.com", role: "Member", sent: "Today, 10:45 AM" },
+                { email: "sarah.j@example.com", role: "Admin", sent: "Yesterday" },
+              ].map((invite, i) => (
+                <TableRow key={i} className="border-b border-border hover:bg-accent/50">
+                  <TableCell className="pl-6 py-3 font-medium text-sm">{invite.email}</TableCell>
+                  <TableCell className="text-sm">{invite.role}</TableCell>
+                  <TableCell>
+                    <Badge variant="secondary" className="bg-warning/15 text-warning border-none font-semibold px-2 py-0.5">
+                      Pending
+                    </Badge>
+                  </TableCell>
+                  <TableCell className="text-sm text-muted-foreground">{invite.sent}</TableCell>
+                  <TableCell className="pr-6 text-right">
+                    <Button variant="outline" size="sm" className="h-8 text-destructive border-destructive/20 hover:bg-destructive/10 hover:text-destructive gap-1 shadow-sm">
+                      <XCircle className="h-3.5 w-3.5" />
+                      Revoke
+                    </Button>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CardContent>
       </Card>
     </div>
   )

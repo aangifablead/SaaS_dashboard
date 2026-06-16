@@ -2,7 +2,7 @@
 
 import Link from "next/link"
 import { usePathname } from "next/navigation"
-import { LayoutDashboard, Settings, CreditCard, Users, Hexagon } from "lucide-react"
+import { LayoutDashboard, Settings, CreditCard, Users, BarChart3 } from "lucide-react"
 import { cn } from "@/lib/utils"
 
 export function SidebarNav() {
@@ -10,10 +10,10 @@ export function SidebarNav() {
 
   const links = [
     { name: "Dashboard", href: "/dashboard", icon: LayoutDashboard },
-    { name: "Analytics", href: "/analytics", icon: Hexagon },
-    { name: "Users", href: "/users", icon: Users },
-    { name: "Billing", href: "/billing", icon: CreditCard },
-    { name: "Settings", href: "/settings", icon: Settings },
+    { name: "Analytics", href: "/dashboard/analytics", icon: BarChart3 },
+    { name: "Team", href: "/dashboard/team", icon: Users },
+    { name: "Billing", href: "/dashboard/billing", icon: CreditCard },
+    { name: "Settings", href: "/dashboard/settings", icon: Settings },
   ]
 
   return (
