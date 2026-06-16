@@ -35,9 +35,9 @@ export default auth((req) => {
     if (!isLoggedIn) {
       return Response.redirect(new URL('/login', nextUrl))
     }
-    if (userRole !== "ADMIN") {
-      return Response.redirect(new URL('/dashboard', nextUrl))
-    }
+    // if (userRole !== "ADMIN") {
+    //   return Response.redirect(new URL('/dashboard', nextUrl))
+    // }
     return // allow
   }
 
