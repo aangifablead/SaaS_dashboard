@@ -68,3 +68,54 @@ export async function GET(req: Request) {
     return new NextResponse("Internal Error", { status: 500 });
   }
 }
+
+export async function POST(req: Request) {
+  try {
+    const session = await auth();
+    if (!session || (session.user as any).role !== "ADMIN") {
+      return new NextResponse("Unauthorized", { status: 401 });
+    }
+
+    const body = await req.json();
+    const { name, ownerEmail, plan } = body;
+
+    if (!name || !ownerEmail) {
+      return new NextResponse("Name and Owner Email are required", { status: 400 });
+    }
+
+    await dbConnect();
+    
+    // Find the owner user
+    const owner = await User.findOne({ email: ownerEmail });
+    if (!owner) {
+      return new NextResponse("Owner user not found with that email", { status: 404 });
+    }
+
+    // Generate slug
+    const slug = name.toLowerCase().replace(/[^a-z0-9]+/g, '-') + '-' + Math.random().toString(36).substring(2, 6);
+
+    const organization = await Organization.create({
+      name,
+      slug,
+      ownerId: owner._id,
+      plan: plan || "FREE",
+    });
+
+    // Update the owner to belong to this organization if they don't have one
+    if (!owner.organizationId) {
+      owner.organizationId = organization._id;
+      await owner.save();
+    }
+
+    return NextResponse.json({
+      id: organization._id,
+      name: organization.name,
+    });
+  } catch (error: any) {
+    console.error("[ADMIN_ORGS_POST]", error);
+    if (error.code === 11000) {
+      return new NextResponse("Organization slug already exists", { status: 400 });
+    }
+    return new NextResponse("Internal Error", { status: 500 });
+  }
+}

@@ -25,6 +25,9 @@ export default function AdminLayoutClient({ children, user }: { children: ReactN
   const pathname = usePathname()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   
+  const pathParts = pathname.split('/').filter(Boolean)
+  const pageName = pathParts.length > 1 ? pathParts[1].charAt(0).toUpperCase() + pathParts[1].slice(1) : "Dashboard"
+  
   // Close mobile menu when route changes
   useEffect(() => {
     setIsMobileMenuOpen(false)
@@ -174,7 +177,7 @@ export default function AdminLayoutClient({ children, user }: { children: ReactN
             <div className="flex items-center gap-2">
               <span className="hidden sm:inline">Admin</span> 
               <span className="hidden sm:inline text-gray-300">/</span> 
-              <span className="font-medium text-gray-900 sm:font-normal sm:text-gray-500">Dashboard</span>
+              <span className="font-medium text-gray-900 sm:font-normal sm:text-gray-500">{pageName}</span>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">

@@ -18,42 +18,120 @@ import {
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu"
+import toast from "react-hot-toast"
 
-// Mock data for the specific org
-const mockOrg = {
-  id: "org_1",
-  name: "TechCorp India",
-  slug: "techcorp-india",
-  created: "Jan 15, 2025",
-  plan: "Pro",
-  owner: {
-    name: "Rahul Mehta",
-    email: "rahul@techcorp.in",
-    avatar: "RM"
-  },
-  stats: {
-    members: 12,
-    mrr: "₹11,988",
-    storage: "45.2 GB",
-    apiCalls: "1.2M"
-  },
-  members: [
-    { id: "m1", name: "Rahul Mehta", email: "rahul@techcorp.in", role: "Owner", plan: "Pro", joined: "Jan 15, 2025", avatar: "RM" },
-    { id: "m2", name: "Priya Singh", email: "priya@techcorp.in", role: "Admin", plan: "Pro", joined: "Jan 16, 2025", avatar: "PS" },
-    { id: "m3", name: "Amit Kumar", email: "amit@techcorp.in", role: "Member", plan: "Pro", joined: "Feb 02, 2025", avatar: "AK" },
-    { id: "m4", name: "Sneha Patel", email: "sneha@techcorp.in", role: "Member", plan: "Pro", joined: "Feb 10, 2025", avatar: "SP" }
-  ],
-  invites: [
-    { email: "vikram@techcorp.in", inviter: "Rahul Mehta", status: "Pending", sent: "Mar 10, 2025", expiry: "Mar 17, 2025" },
-    { email: "neha@techcorp.in", inviter: "Priya Singh", status: "Expired", sent: "Feb 01, 2025", expiry: "Feb 08, 2025" },
-    { email: "amit@techcorp.in", inviter: "Rahul Mehta", status: "Accepted", sent: "Feb 01, 2025", expiry: "-" }
-  ]
-}
+import useSWR from "swr"
+
+const fetcher = (url: string) => fetch(url).then(res => res.json())
 
 export default function OrganizationDetailPage() {
   const params = useParams()
   const orgId = params.id as string
+  const { data: orgData, error, isLoading, mutate } = useSWR(`/api/admin/organizations/${orgId}`, fetcher)
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
+  const [isEditing, setIsEditing] = useState(false)
+  const [editModalOpen, setEditModalOpen] = useState(false)
+  
+  // Role Change State
+  const [roleModalMember, setRoleModalMember] = useState<any>(null)
+  const [isChangingRole, setIsChangingRole] = useState(false)
+
+  const handleEditOrganization = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    setIsEditing(true);
+    const formData = new FormData(e.currentTarget);
+    const name = formData.get("name") as string;
+    const plan = formData.get("plan") as string;
+
+    try {
+      const res = await fetch(`/api/admin/organizations/${orgId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name, plan })
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText);
+      }
+
+      setEditModalOpen(false);
+      mutate(); // Instantly refresh the page data
+      toast.success("Organization updated successfully");
+    } catch (error: any) {
+      console.error("Failed to edit organization:", error);
+      toast.error("Error updating organization: " + error.message);
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleRoleChange = async (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (!roleModalMember) return;
+    setIsChangingRole(true);
+    const formData = new FormData(e.currentTarget);
+    const role = formData.get("role") as string;
+
+    try {
+      const res = await fetch(`/api/admin/users/${roleModalMember.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ role })
+      });
+
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText);
+      }
+
+      setRoleModalMember(null);
+      mutate();
+      toast.success(`Role updated successfully`);
+    } catch (error: any) {
+      console.error("Failed to change role:", error);
+      toast.error("Error updating role: " + error.message);
+    } finally {
+      setIsChangingRole(false);
+    }
+  };
+
+  const handleRemoveMember = async (member: any) => {
+    if (member.role === "ADMIN" || member.role === "Admin" || member.role === "OWNER" || member.role === "Owner") {
+      toast.error("You can't delete admin in organization", { duration: 4000 });
+      return;
+    }
+
+    if (!confirm(`Are you sure you want to remove ${member.name} from this organization?`)) {
+      return;
+    }
+
+    try {
+      // Unset organizationId for this user using your PATCH route or dedicated route
+      const res = await fetch(`/api/admin/users/${member.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ organizationId: null }) // Requires API support for unset
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+      mutate();
+      toast.success(`${member.name} removed from organization`);
+    } catch (error: any) {
+      console.error("Failed to remove member:", error);
+      toast.error("Error removing member: " + error.message);
+    }
+  };
+
+  if (isLoading) return <div className="p-10 text-center text-gray-500">Loading organization details...</div>
+  if (error || !orgData) return <div className="p-10 text-center text-red-500">Failed to load organization</div>
 
   return (
     <div className="space-y-6 pb-10 max-w-6xl mx-auto">
@@ -75,21 +153,21 @@ export default function OrganizationDetailPage() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="p-6 flex flex-col items-center text-center border-b border-gray-100">
               <div className="h-20 w-20 rounded-xl bg-indigo-50 border-2 border-indigo-100 flex items-center justify-center text-indigo-700 text-2xl font-bold mb-4 shadow-sm">
-                {mockOrg.name.substring(0, 2).toUpperCase()}
+                {orgData.name.substring(0, 2).toUpperCase()}
               </div>
-              <h1 className="text-xl font-bold text-gray-900">{mockOrg.name}</h1>
+              <h1 className="text-xl font-bold text-gray-900">{orgData.name}</h1>
               <span className="inline-flex items-center rounded-md bg-gray-100 px-2 py-1 text-xs font-medium text-gray-600 mt-2 mb-4 font-mono">
-                {mockOrg.slug}
+                {orgData.slug}
               </span>
               <div className="flex gap-2 mb-6">
                 <span className="inline-flex items-center rounded-md bg-indigo-100 px-2.5 py-0.5 text-xs font-semibold text-indigo-700">
-                  {mockOrg.plan} Plan
+                  {orgData.plan === "FREE" ? "Free" : orgData.plan === "PRO" ? "Pro" : "Enterprise"} Plan
                 </span>
                 <span className="inline-flex items-center rounded-md bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-600">
-                  Created {mockOrg.created}
+                  Created {new Date(orgData.createdAt).toLocaleDateString()}
                 </span>
               </div>
-              <button className="w-full px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm">
+              <button onClick={() => setEditModalOpen(true)} className="w-full px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 shadow-sm transition-colors">
                 Edit Organization
               </button>
             </div>
@@ -103,12 +181,11 @@ export default function OrganizationDetailPage() {
             <div className="p-6">
               <div className="flex items-center gap-4 mb-4">
                 <Avatar className="h-12 w-12 border border-gray-200 shadow-sm">
-                  <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${mockOrg.owner.avatar}`} />
-                  <AvatarFallback>{mockOrg.owner.avatar}</AvatarFallback>
+                  <AvatarFallback>{orgData.owner.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                 </Avatar>
                 <div>
-                  <div className="font-semibold text-gray-900">{mockOrg.owner.name}</div>
-                  <div className="text-sm text-gray-500">{mockOrg.owner.email}</div>
+                  <div className="font-semibold text-gray-900">{orgData.owner.name}</div>
+                  <div className="text-sm text-gray-500">{orgData.owner.email}</div>
                 </div>
               </div>
               <Link href="/admin/users" className="text-sm font-medium text-indigo-600 hover:text-indigo-800">
@@ -117,21 +194,52 @@ export default function OrganizationDetailPage() {
             </div>
           </div>
 
-          {/* Danger Zone */}
-          <div className="bg-red-50 rounded-xl shadow-sm border border-red-200 overflow-hidden">
-            <div className="px-6 py-4 border-b border-red-100 bg-red-100/50 flex items-center gap-2">
-              <AlertTriangle className="h-4 w-4 text-red-600" />
-              <h3 className="font-semibold text-red-800 text-sm">Danger Zone</h3>
+          {/* Subscription Usage Card */}
+          <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
+            <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
+              <h3 className="font-semibold text-gray-900 text-sm">Subscription Usage</h3>
             </div>
-            <div className="p-6">
-              <p className="text-sm text-red-600 mb-4">
-                This will permanently delete the organization, remove all members, and destroy all associated data.
-              </p>
-              <button className="w-full px-4 py-2 bg-red-600 rounded-md text-sm font-medium text-white hover:bg-red-700 shadow-sm">
-                Delete Organization
-              </button>
+            <div className="p-6 space-y-6">
+              
+              {/* Storage Progress */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700">Storage Limit</span>
+                  <span className="text-sm font-semibold text-gray-900">0 GB <span className="text-gray-400 font-normal">/ 100 GB</span></span>
+                </div>
+                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-indigo-500 rounded-full transition-all duration-1000" style={{ width: '0%' }}></div>
+                </div>
+              </div>
+
+              {/* API Calls Progress */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700">API Requests</span>
+                  <span className="text-sm font-semibold text-gray-900">0 <span className="text-gray-400 font-normal">/ 2M</span></span>
+                </div>
+                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-[#6366f1] rounded-full transition-all duration-1000" style={{ width: '0%' }}></div>
+                </div>
+              </div>
+
+              {/* Members Limit */}
+              <div>
+                <div className="flex justify-between items-center mb-2">
+                  <span className="text-sm font-medium text-gray-700">Team Members</span>
+                  <span className="text-sm font-semibold text-gray-900">{orgData.members.length} <span className="text-gray-400 font-normal">/ {orgData.plan === 'ENTERPRISE' ? 'Unlimited' : orgData.plan === 'PRO' ? '20' : '5'}</span></span>
+                </div>
+                <div className="h-2 w-full bg-gray-100 rounded-full overflow-hidden">
+                  <div className="h-full bg-purple-500 rounded-full transition-all duration-1000" style={{ 
+                    width: orgData.plan === 'ENTERPRISE' ? '100%' : `${Math.min((orgData.members.length / (orgData.plan === 'PRO' ? 20 : 5)) * 100, 100)}%` 
+                  }}></div>
+                </div>
+              </div>
+
             </div>
           </div>
+
+
 
         </div>
 
@@ -145,28 +253,28 @@ export default function OrganizationDetailPage() {
                 <Users className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Members</span>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{mockOrg.stats.members}</div>
+              <div className="text-2xl font-bold text-gray-900">{orgData.members.length}</div>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
               <div className="flex items-center gap-2 text-gray-500 mb-2">
                 <CreditCard className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Revenue</span>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{mockOrg.stats.mrr}</div>
+              <div className="text-2xl font-bold text-gray-900">{orgData.plan === "FREE" ? "₹0" : orgData.plan === "PRO" ? "₹4,995" : "Custom"}</div>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
               <div className="flex items-center gap-2 text-gray-500 mb-2">
                 <HardDrive className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Storage</span>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{mockOrg.stats.storage}</div>
+              <div className="text-2xl font-bold text-gray-900">0 GB</div>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
               <div className="flex items-center gap-2 text-gray-500 mb-2">
                 <Activity className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">API Calls</span>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{mockOrg.stats.apiCalls}</div>
+              <div className="text-2xl font-bold text-gray-900">0</div>
             </div>
           </div>
 
@@ -174,7 +282,7 @@ export default function OrganizationDetailPage() {
           <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
             <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
               <h3 className="font-semibold text-gray-900">Team Members</h3>
-              <span className="text-xs font-medium text-gray-500 bg-white border border-gray-200 px-2 py-1 rounded-md">{mockOrg.members.length} Active</span>
+              <span className="text-xs font-medium text-gray-500 bg-white border border-gray-200 px-2 py-1 rounded-md">{orgData.members.length} Total</span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
@@ -187,13 +295,12 @@ export default function OrganizationDetailPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {mockOrg.members.map(member => (
+                  {orgData.members.map((member: any) => (
                     <tr key={member.id} className="hover:bg-gray-50">
                       <td className="px-6 py-3">
                         <div className="flex items-center gap-3">
                           <Avatar className="h-8 w-8 border border-gray-200">
-                            <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${member.avatar}`} />
-                            <AvatarFallback>{member.avatar}</AvatarFallback>
+                            <AvatarFallback>{member.name.substring(0, 2).toUpperCase()}</AvatarFallback>
                           </Avatar>
                           <div>
                             <div className="font-medium text-gray-900">{member.name}</div>
@@ -203,8 +310,8 @@ export default function OrganizationDetailPage() {
                       </td>
                       <td className="px-6 py-3">
                         <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-medium ${
-                          member.role === 'Owner' ? 'bg-purple-100 text-purple-700' : 
-                          member.role === 'Admin' ? 'bg-indigo-100 text-indigo-700' : 
+                          member.role === 'OWNER' || member.role === 'Owner' ? 'bg-purple-100 text-purple-700' : 
+                          member.role === 'ADMIN' || member.role === 'Admin' ? 'bg-indigo-100 text-indigo-700' : 
                           'bg-gray-100 text-gray-700'
                         }`}>
                           {member.role}
@@ -214,23 +321,18 @@ export default function OrganizationDetailPage() {
                         {member.joined}
                       </td>
                       <td className="px-6 py-3 text-right">
-                        <div className="relative inline-block text-left">
-                          <button 
-                            onClick={() => setActiveDropdown(activeDropdown === member.id ? null : member.id)}
-                            className="p-1 hover:bg-gray-200 rounded text-gray-500"
-                          >
+                        <DropdownMenu>
+                          <DropdownMenuTrigger className="p-1 hover:bg-gray-200 rounded text-gray-500 transition-colors outline-none cursor-pointer inline-flex items-center justify-center">
                             <MoreHorizontal className="h-4 w-4" />
-                          </button>
-                          {activeDropdown === member.id && (
-                            <>
-                              <div className="fixed inset-0 z-10" onClick={() => setActiveDropdown(null)} />
-                              <div className="absolute right-0 top-full mt-1 w-40 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-none z-20">
-                                <button className="block w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">Change Role</button>
-                                <button className="block w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50 font-medium">Remove Member</button>
-                              </div>
-                            </>
-                          )}
-                        </div>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-40">
+                            <DropdownMenuItem onClick={() => setRoleModalMember(member)} className="cursor-pointer">Change Role</DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => handleRemoveMember(member)} className="cursor-pointer text-red-600 focus:text-red-600 focus:bg-red-50 font-medium">
+                              Remove Member
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </td>
                     </tr>
                   ))}
@@ -256,7 +358,7 @@ export default function OrganizationDetailPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {mockOrg.invites.map((invite, i) => (
+                  {orgData.invites.map((invite: any, i: number) => (
                     <tr key={i} className="hover:bg-gray-50">
                       <td className="px-6 py-3 font-medium text-gray-900">{invite.email}</td>
                       <td className="px-6 py-3 text-gray-600">{invite.inviter}</td>
@@ -286,6 +388,80 @@ export default function OrganizationDetailPage() {
         </div>
       </div>
       
+      {/* EDIT ORG MODAL */}
+      {editModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity" onClick={() => setEditModalOpen(false)} />
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-md z-10 overflow-hidden animate-in zoom-in-95">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-[#f8fafc]">
+              <h2 className="text-xl font-bold text-[#0f172a]">Edit Organization</h2>
+              <button onClick={() => setEditModalOpen(false)} className="text-gray-400 hover:text-gray-500">
+                <span className="sr-only">Close</span>
+                &times;
+              </button>
+            </div>
+            <form onSubmit={handleEditOrganization} autoComplete="off">
+              <div className="p-6 space-y-4">
+                <div>
+                  <label className="block text-sm font-medium text-[#0f172a] mb-1">Organization Name</label>
+                  <input type="text" name="name" defaultValue={orgData.name} required className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1] outline-none" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-[#0f172a] mb-1">Plan</label>
+                  <select name="plan" defaultValue={orgData.plan === "PRO" ? "PRO" : orgData.plan === "ENTERPRISE" ? "ENTERPRISE" : "FREE"} className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#6366f1] outline-none">
+                    <option value="FREE">Free</option>
+                    <option value="PRO">Pro</option>
+                    <option value="ENTERPRISE">Enterprise</option>
+                  </select>
+                </div>
+              </div>
+              <div className="px-6 py-4 bg-[#f8fafc] border-t border-gray-100 flex justify-end gap-3">
+                <button type="button" onClick={() => setEditModalOpen(false)} className="px-4 py-2 text-sm font-medium text-[#0f172a] bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={isEditing} className="px-4 py-2 text-sm font-medium text-white bg-[#6366f1] rounded-md hover:bg-[#4f46e5] disabled:opacity-70">
+                  {isEditing ? "Saving..." : "Save Changes"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* CHANGE ROLE MODAL */}
+      {roleModalMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center px-4">
+          <div className="absolute inset-0 bg-gray-900/50 backdrop-blur-sm transition-opacity" onClick={() => setRoleModalMember(null)} />
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-sm z-10 overflow-hidden animate-in zoom-in-95">
+            <div className="px-6 py-4 border-b border-gray-100 flex justify-between items-center bg-[#f8fafc]">
+              <h2 className="text-xl font-bold text-[#0f172a]">Change User Role</h2>
+              <button onClick={() => setRoleModalMember(null)} className="text-gray-400 hover:text-gray-500">
+                <span className="sr-only">Close</span>
+                &times;
+              </button>
+            </div>
+            <form onSubmit={handleRoleChange} autoComplete="off">
+              <div className="p-6 space-y-4">
+                <p className="text-sm text-gray-600 mb-4">
+                  Select a new role for <strong>{roleModalMember.name}</strong>:
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-[#0f172a] mb-1">System Role</label>
+                  <select name="role" defaultValue={roleModalMember.role} className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#6366f1] outline-none">
+                    <option value="MEMBER">Member</option>
+                    <option value="ADMIN">Admin</option>
+                  </select>
+                </div>
+              </div>
+              <div className="px-6 py-4 bg-[#f8fafc] border-t border-gray-100 flex justify-end gap-3">
+                <button type="button" onClick={() => setRoleModalMember(null)} className="px-4 py-2 text-sm font-medium text-[#0f172a] bg-white border border-gray-300 rounded-md hover:bg-gray-50">Cancel</button>
+                <button type="submit" disabled={isChangingRole} className="px-4 py-2 text-sm font-medium text-white bg-[#6366f1] rounded-md hover:bg-[#4f46e5] disabled:opacity-70">
+                  {isChangingRole ? "Saving..." : "Save Role"}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
     </div>
   )
 }
