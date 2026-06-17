@@ -151,10 +151,10 @@ export default function OrganizationsClient({ organizations }: { organizations: 
     <div className="space-y-6 pb-10">
       
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#eef2ff] to-white rounded-xl shadow-sm border border-[#c7d2fe] px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight text-[#0f172a]">Organizations</h1>
-          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-[#64748b]">
+          <span className="inline-flex items-center rounded-full bg-white border border-[#c7d2fe] px-2.5 py-0.5 text-xs font-semibold text-[#4f46e5]">
             {organizations.length} total
           </span>
         </div>

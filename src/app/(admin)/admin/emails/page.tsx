@@ -9,6 +9,7 @@ export default async function EmailsPage() {
   const formattedHistory = emailHistoryRaw.map((e: any) => ({
     id: e._id.toString(),
     subject: e.subject,
+    body: e.body,
     recipients: e.to === "All Users" ? "All Users" : e.to.split(',').length + " User(s)",
     sentBy: "Admin", // simplified
     date: new Date(e.createdAt).toLocaleString(),

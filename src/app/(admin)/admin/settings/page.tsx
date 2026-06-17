@@ -58,9 +58,11 @@ export default function AdminSettingsPage() {
       )}
 
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight text-[#0f172a]">Admin Settings</h1>
-        <p className="text-sm text-[#64748b]">Manage platform configuration, security, and external integrations.</p>
+      <div className="bg-gradient-to-r from-[#eef2ff] to-white rounded-xl shadow-sm border border-[#c7d2fe] px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-[#0f172a]">Admin Settings</h1>
+          <p className="text-sm text-[#4f46e5] font-medium mt-1">Manage platform configuration, security, and external integrations.</p>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -608,11 +610,9 @@ function ToggleRow({ label, description, defaultChecked, danger = false, hideLab
       <label className="relative inline-flex items-center cursor-pointer shrink-0">
         <input type="checkbox" className="sr-only peer" checked={checked} onChange={(e) => setChecked(e.target.checked)} />
         <div className={`
-          w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-2 peer-focus:ring-offset-2 
-          ${danger ? 'peer-focus:ring-red-500' : 'peer-focus:ring-[#6366f1]'} 
-          rounded-full peer 
+          w-11 h-6 peer-focus:outline-none rounded-full peer 
           peer-checked:after:translate-x-full peer-checked:after:border-white 
-          after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all 
+          after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all
           ${checked ? (danger ? 'bg-red-500' : 'bg-[#6366f1]') : 'bg-gray-200'}
         `}></div>
       </label>

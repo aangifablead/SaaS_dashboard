@@ -9,18 +9,23 @@ export async function PATCH(
 ) {
   try {
     const session = await auth();
-    if (!session || (session.user as any).role !== "ADMIN") {
+    if (!session || (session.user as any).role?.toUpperCase() !== "ADMIN") {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
     const body = await req.json();
-    const { name, email, role, plan, isActive } = body;
+    const { name, email, role, plan, isActive, organizationId } = body;
 
     const { id } = await params;
     await dbConnect();
+    const updateData: any = { name, email, role, plan, isActive };
+    if (organizationId !== undefined) {
+      updateData.organizationId = organizationId || null; // allow nulling it out
+    }
+
     const user = await User.findByIdAndUpdate(
       id,
-      { name, email, role, plan, isActive },
+      updateData,
       { new: true }
     );
 
@@ -37,7 +42,7 @@ export async function DELETE(
 ) {
   try {
     const session = await auth();
-    if (!session || (session.user as any).role !== "ADMIN") {
+    if (!session || (session.user as any).role?.toUpperCase() !== "ADMIN") {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 

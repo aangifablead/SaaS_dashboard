@@ -74,6 +74,7 @@ export default function AdminUsersPage() {
   }).toString();
 
   const { data, isLoading, mutate } = useSWR(`/api/admin/users?${query}`, fetcher);
+  const { data: orgData } = useSWR(`/api/admin/organizations`, fetcher);
 
   const currentData = useMemo(() => {
     if (!data?.users) return [];
@@ -84,9 +85,10 @@ export default function AdminUsersPage() {
       role: u.role === 'ADMIN' ? 'Admin' : 'User',
       plan: u.plan === 'FREE' ? 'Free' : u.plan === 'PRO' ? 'Pro' : 'Enterprise',
       status: u.isActive ? 'Active' : 'Inactive',
-      joinedDate: new Date(u.createdAt).toISOString().split('T')[0],
+      joinedDate: u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : 'N/A',
       lastActive: 'Active recently',
-      avatarInitial: (u.name || 'U').substring(0, 2).toUpperCase()
+      avatarInitial: (u.name || 'U').substring(0, 2).toUpperCase(),
+      organizationId: u.organization ? (u.organization._id || u.organization.id) : null
     }));
   }, [data]);
 
@@ -145,7 +147,8 @@ export default function AdminUsersPage() {
       email: formData.get("email"),
       role: formData.get("role") === "Admin" ? "ADMIN" : "USER",
       plan: formData.get("plan")?.toString().toUpperCase(),
-      isActive: formData.get("isActive") === "on"
+      isActive: formData.get("isActive") === "on",
+      organizationId: formData.get("organizationId") === "none" ? null : formData.get("organizationId")
     }
 
     setIsSaving(true)
@@ -280,15 +283,15 @@ export default function AdminUsersPage() {
       )}
 
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#eef2ff] to-white rounded-xl shadow-sm border border-[#c7d2fe] px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="flex items-center gap-3">
           <h1 className="text-2xl font-bold tracking-tight text-[#0f172a]">All Users</h1>
-          <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-[#64748b]">
+          <span className="inline-flex items-center rounded-full bg-white border border-[#c7d2fe] px-2.5 py-0.5 text-xs font-semibold text-[#4f46e5]">
             {totalCount} total
           </span>
         </div>
         <div className="flex items-center gap-3">
-            <button onClick={handleExportCSV} className="flex items-center gap-2 px-4 py-2 bg-white border border-gray-200 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-50 hover:text-gray-900 transition-colors shadow-sm">
+            <button onClick={handleExportCSV} className="flex items-center gap-2 px-4 py-2 bg-white border border-[#c7d2fe] rounded-lg text-sm font-medium text-[#4f46e5] hover:bg-[#eef2ff] transition-colors shadow-sm">
               <Download className="h-4 w-4" />
               Export CSV
             </button>
@@ -781,6 +784,15 @@ export default function AdminUsersPage() {
                               <option>Enterprise</option>
                             </select>
                           </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium text-[#0f172a] mb-1">Assign to Organization</label>
+                          <select name="organizationId" defaultValue={editingUser.organizationId || "none"} className="w-full rounded-md border border-gray-300 px-3 py-2 focus:border-[#6366f1] focus:ring-1 focus:ring-[#6366f1] outline-none">
+                            <option value="none">No Organization</option>
+                            {orgData?.organizations?.map((org: any) => (
+                              <option key={org.id} value={org.id}>{org.name}</option>
+                            ))}
+                          </select>
                         </div>
                         <div>
                           <label className="block text-sm font-medium text-[#0f172a] mb-2 flex items-center justify-between">

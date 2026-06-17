@@ -114,7 +114,7 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
     <div className="space-y-6 pb-10">
       
       {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="bg-gradient-to-r from-[#eef2ff] to-white rounded-xl shadow-sm border border-[#c7d2fe] px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold tracking-tight text-[#0f172a]">Revenue & Payments</h1>
         <div className="flex items-center gap-3">
           <select className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm focus:border-[#6366f1] outline-none">
@@ -124,7 +124,7 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
             <option>This Year</option>
             <option>All Time</option>
           </select>
-          <button onClick={handleExport} className="inline-flex items-center justify-center rounded-md border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50 transition-colors">
+          <button onClick={handleExport} className="inline-flex items-center justify-center rounded-md border border-[#c7d2fe] bg-white px-4 py-2 text-sm font-medium text-[#4f46e5] shadow-sm hover:bg-[#eef2ff] transition-colors">
             <Download className="mr-2 h-4 w-4" />
             Export Report
           </button>

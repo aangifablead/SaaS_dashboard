@@ -22,9 +22,11 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 export default function DashboardClient({ totalUsers, activeSubs, newUsers, totalRevenue, recentUsers, planData, revenueData }: any) {
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold tracking-tight">Dashboard Overview</h1>
-        <p className="text-muted-foreground">Here&apos;s what&apos;s happening with your platform today.</p>
+      <div className="bg-gradient-to-r from-[#eef2ff] to-white rounded-xl shadow-sm border border-[#c7d2fe] px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight text-[#0f172a]">Dashboard Overview</h1>
+          <p className="text-sm text-[#4f46e5] font-medium mt-1">Here&apos;s what&apos;s happening with your platform today.</p>
+        </div>
       </div>
 
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">

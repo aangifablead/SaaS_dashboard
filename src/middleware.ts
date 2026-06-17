@@ -25,6 +25,7 @@ export default auth((req) => {
   if (req.auth?.user?.email === "admin@gmail.com") {
     userRole = "ADMIN"
   }
+  userRole = userRole.toUpperCase()
 
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname)
   const isAuthRoute = nextUrl.pathname === '/login' || nextUrl.pathname === '/register' || nextUrl.pathname === '/forgot-password'

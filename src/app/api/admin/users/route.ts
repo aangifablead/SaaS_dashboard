@@ -7,7 +7,7 @@ import bcrypt from "bcryptjs";
 export async function GET(req: Request) {
   try {
     const session = await auth();
-    if (!session || (session.user as any).role !== "ADMIN") {
+    if (!session || (session.user as any).role?.toUpperCase() !== "ADMIN") {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
@@ -80,7 +80,7 @@ export async function GET(req: Request) {
 export async function POST(req: Request) {
   try {
     const session = await auth();
-    if (!session || (session.user as any).role !== "ADMIN") {
+    if (!session || (session.user as any).role?.toUpperCase() !== "ADMIN") {
       return new NextResponse("Unauthorized", { status: 401 });
     }
 
