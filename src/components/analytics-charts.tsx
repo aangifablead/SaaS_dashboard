@@ -75,7 +75,7 @@ export function TrafficSourcesChart() {
           <YAxis dataKey="name" type="category" axisLine={false} tickLine={false} tick={{ fill: '#0f172a', fontSize: 13, fontWeight: 500 }} />
           <Tooltip 
             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
-            formatter={(value: number) => [`${value}%`, 'Share']}
+            formatter={(value: any) => [`${value}%`, 'Share']}
             cursor={{ fill: '#f1f5f9' }}
           />
           <Bar dataKey="value" fill="#a855f7" radius={[0, 4, 4, 0]} barSize={24} />

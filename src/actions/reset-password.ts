@@ -1,15 +1,16 @@
 "use server"
 
-import { prisma } from "@/lib/prisma"
+import dbConnect from "@/lib/mongoose"
+import { User } from "@/models/User"
+import { PasswordResetToken } from "@/models/PasswordResetToken"
 import nodemailer from "nodemailer"
 import crypto from "crypto"
 import { hash } from "bcryptjs"
 
 export async function sendPasswordResetEmail(email: string) {
   try {
-    const user = await prisma.user.findUnique({
-      where: { email },
-    })
+    await dbConnect()
+    const user = await User.findOne({ email })
 
     if (!user) {
       // Return success even if user not found to prevent email enumeration
@@ -24,12 +25,10 @@ export async function sendPasswordResetEmail(email: string) {
     expires.setHours(expires.getHours() + 1)
 
     // Save token in the database
-    await prisma.passwordResetToken.create({
-      data: {
-        email,
-        token,
-        expires,
-      },
+    await PasswordResetToken.create({
+      email,
+      token,
+      expires,
     })
 
     // Construct the reset link
@@ -178,10 +177,9 @@ export async function resetPassword(formData: FormData) {
   }
 
   try {
+    await dbConnect()
     // Find valid token
-    const existingToken = await prisma.passwordResetToken.findUnique({
-      where: { token },
-    })
+    const existingToken = await PasswordResetToken.findOne({ token })
 
     if (!existingToken) {
       return { success: false, error: "Invalid token!" }
@@ -193,9 +191,7 @@ export async function resetPassword(formData: FormData) {
     }
 
     // Find the user by email
-    const user = await prisma.user.findUnique({
-      where: { email: existingToken.email },
-    })
+    const user = await User.findOne({ email: existingToken.email })
 
     if (!user) {
       return { success: false, error: "User does not exist!" }
@@ -205,15 +201,10 @@ export async function resetPassword(formData: FormData) {
     const hashedPassword = await hash(password, 10)
 
     // Update user password
-    await prisma.user.update({
-      where: { id: user.id },
-      data: { password: hashedPassword },
-    })
+    await User.findByIdAndUpdate(user._id, { password: hashedPassword })
 
     // Delete the used token
-    await prisma.passwordResetToken.delete({
-      where: { id: existingToken.id },
-    })
+    await PasswordResetToken.findByIdAndDelete(existingToken._id)
 
     return { success: true }
   } catch (error) {

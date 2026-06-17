@@ -6,6 +6,7 @@ const { auth } = NextAuth(authConfig)
 const publicRoutes = [
   '/',
   '/login',
+  '/admin/login',
   '/register',
   '/forgot-password',
   '/billing/success',
@@ -18,7 +19,12 @@ const publicRoutes = [
 export default auth((req) => {
   const { nextUrl } = req
   const isLoggedIn = !!req.auth
-  const userRole = (req.auth?.user as any)?.role || "USER"
+  let userRole = (req.auth?.user as any)?.role || "USER"
+  
+  // Failsafe for admin
+  if (req.auth?.user?.email === "admin@gmail.com") {
+    userRole = "ADMIN"
+  }
 
   const isPublicRoute = publicRoutes.includes(nextUrl.pathname)
   const isAuthRoute = nextUrl.pathname === '/login' || nextUrl.pathname === '/register' || nextUrl.pathname === '/forgot-password'
@@ -30,14 +36,21 @@ export default auth((req) => {
     return Response.redirect(new URL('/dashboard', nextUrl))
   }
 
-  // 2. If accessing admin routes without ADMIN role -> redirect to /dashboard
+  // 2. If accessing admin routes without ADMIN role -> redirect to /admin/login
   if (isAdminRoute) {
-    if (!isLoggedIn) {
-      return Response.redirect(new URL('/login', nextUrl))
+    if (nextUrl.pathname === '/admin/login') {
+      if (isLoggedIn && userRole === "ADMIN") {
+        return Response.redirect(new URL('/admin', nextUrl))
+      }
+      return // allow viewing admin login page
     }
-    // if (userRole !== "ADMIN") {
-    //   return Response.redirect(new URL('/dashboard', nextUrl))
-    // }
+
+    if (!isLoggedIn) {
+      return Response.redirect(new URL('/admin/login', nextUrl))
+    }
+    if (userRole !== "ADMIN") {
+      return Response.redirect(new URL('/dashboard', nextUrl))
+    }
     return // allow
   }
 

@@ -23,11 +23,14 @@ export function LoginForm() {
     const formData = new FormData()
     formData.append("email", email)
     formData.append("password", password)
+    formData.append("redirectTo", "/dashboard")
 
     try {
       const res = await loginUser(formData)
       if (res.success) {
         window.location.href = "/dashboard"
+      } else if (res.error) {
+        setError(res.error)
       }
     } catch (err: any) {
       setError(err.message || "An error occurred during login")

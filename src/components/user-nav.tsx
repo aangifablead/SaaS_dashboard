@@ -15,7 +15,7 @@ import {
 import { signOut } from "next-auth/react"
 import Link from "next/link"
 
-export function UserNav({ user }: { user: { name?: string | null; email?: string | null; image?: string | null } }) {
+export function UserNav({ user }: { user: { name?: string | null; email?: string | null; image?: string | null; role?: string | null } }) {
   const initials = user?.name
     ? user.name.slice(0, 2).toUpperCase()
     : user?.email?.slice(0, 2).toUpperCase() || "US"
@@ -38,6 +38,12 @@ export function UserNav({ user }: { user: { name?: string | null; email?: string
           </div>
         </div>
         <DropdownMenuGroup>
+          {(user as any)?.role === "ADMIN" && (
+            <DropdownMenuItem render={<Link href="/admin" />} className="cursor-pointer font-medium text-indigo-600 focus:text-indigo-600 focus:bg-indigo-50">
+              Admin Dashboard
+              <DropdownMenuShortcut>⌘A</DropdownMenuShortcut>
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem render={<Link href="/dashboard/settings" />} className="cursor-pointer">
             Profile Settings
             <DropdownMenuShortcut>⇧⌘P</DropdownMenuShortcut>

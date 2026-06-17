@@ -2,12 +2,14 @@ import NextAuth from "next-auth"
 import GitHub from "next-auth/providers/github"
 import Google from "next-auth/providers/google"
 import Credentials from "next-auth/providers/credentials"
-import { PrismaAdapter } from "@auth/prisma-adapter"
-import { prisma } from "@/lib/prisma"
+import { MongoDBAdapter } from "@auth/mongodb-adapter"
+import clientPromise from "./lib/mongodb"
 import { compare } from "bcryptjs"
+import dbConnect from "./lib/mongoose"
+import { User } from "./models/User"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
-  adapter: PrismaAdapter(prisma),
+  adapter: MongoDBAdapter(clientPromise),
   session: { strategy: "jwt" },
   providers: [
     GitHub,
@@ -22,9 +24,8 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null
         }
 
-        const user = await prisma.user.findUnique({
-          where: { email: credentials.email as string },
-        })
+        await dbConnect()
+        const user = await User.findOne({ email: credentials.email as string })
 
         if (!user || !user.password) {
           return null
@@ -39,7 +40,12 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
           return null
         }
 
-        return user
+        return {
+          id: user.id.toString(),
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        }
       },
     }),
   ],

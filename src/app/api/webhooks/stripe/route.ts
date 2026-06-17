@@ -1,13 +1,12 @@
 import { headers } from "next/headers"
 import { NextResponse } from "next/server"
 import Stripe from "stripe"
-import { PrismaClient } from "@prisma/client"
+import dbConnect from "@/lib/mongoose"
+import { User } from "@/models/User"
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY || "sk_test_dummy", {
   apiVersion: "2026-05-27.dahlia" as any,
 })
-
-const prisma = new PrismaClient()
 
 export async function POST(req: Request) {
   const body = await req.text()
@@ -35,16 +34,12 @@ export async function POST(req: Request) {
 
     // Update the organization's subscription in the database
     if (session?.client_reference_id) {
-      await prisma.organization.update({
-        where: {
-          id: session.client_reference_id,
-        },
-        data: {
-          stripeSubscriptionId: subscription.id,
-          stripeCustomerId: subscription.customer as string,
-          plan: "PRO", // Determine plan based on price ID
-          currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
-        },
+      await dbConnect()
+      await User.findByIdAndUpdate(session.client_reference_id, {
+        stripeSubId: subscription.id,
+        stripeCustomerId: subscription.customer as string,
+        plan: "PRO", // Determine plan based on price ID
+        planExpiresAt: new Date((subscription as any).current_period_end * 1000),
       })
     }
   }
@@ -55,15 +50,14 @@ export async function POST(req: Request) {
       session.subscription as string
     )
 
-    await prisma.organization.update({
-      where: {
-        stripeSubscriptionId: subscription.id,
-      },
-      data: {
+    await dbConnect()
+    await User.findOneAndUpdate(
+      { stripeSubId: subscription.id },
+      {
         plan: "PRO",
-        currentPeriodEnd: new Date((subscription as any).current_period_end * 1000),
-      },
-    })
+        planExpiresAt: new Date((subscription as any).current_period_end * 1000),
+      }
+    )
   }
 
   return new NextResponse(null, { status: 200 })

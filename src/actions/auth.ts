@@ -1,6 +1,7 @@
 "use server"
 
-import { prisma } from "@/lib/prisma"
+import dbConnect from "@/lib/mongoose"
+import { User } from "@/models/User"
 import { hash } from "bcryptjs"
 
 export async function registerUser(formData: FormData) {
@@ -12,9 +13,8 @@ export async function registerUser(formData: FormData) {
     throw new Error("Email and password are required")
   }
 
-  const existingUser = await prisma.user.findUnique({
-    where: { email },
-  })
+  await dbConnect()
+  const existingUser = await User.findOne({ email })
 
   if (existingUser) {
     throw new Error("This account already exists. Please login instead.")
@@ -27,9 +27,7 @@ export async function registerUser(formData: FormData) {
       email,
       password: passwordHash,
     }
-    const user = await prisma.user.create({
-      data,
-    })
+    const user = await User.create(data)
 
   return { success: true, userId: user.id }
 }
@@ -37,21 +35,28 @@ export async function registerUser(formData: FormData) {
 export async function loginUser(formData: FormData) {
   const email = formData.get("email") as string
   const password = formData.get("password") as string
+  const redirectTo = (formData.get("redirectTo") as string) || "/"
 
   if (!email || !password) {
     throw new Error("Email and password are required")
   }
 
-  // We are using Credentials provider, so we can use NextAuth signIn server action
   const { signIn } = await import("@/auth")
   try {
     await signIn("credentials", {
       email,
       password,
-      redirect: false,
+      redirectTo,
     })
     return { success: true }
-  } catch (err: any) {
-    throw new Error("Invalid credentials")
+  } catch (error: any) {
+    if (error.name === "AuthError" || error.type?.includes("CredentialsSignin")) {
+      return { success: false, error: "Invalid email or password" }
+    }
+    // If it's a Next.js redirect error, we must re-throw it so it works
+    if (error.message && error.message.includes("NEXT_REDIRECT")) {
+      throw error
+    }
+    return { success: false, error: "An unexpected error occurred" }
   }
 }
