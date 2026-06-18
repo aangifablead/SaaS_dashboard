@@ -23,7 +23,7 @@ export async function POST(req: Request) {
     }
 
     const body = await req.json();
-    const { to, subject, body: emailBody, isDraft } = body;
+    const { id, to, subject, body: emailBody, isDraft } = body;
 
     if (!to || !subject || !emailBody) {
       return new NextResponse("Missing required fields", { status: 400 });
@@ -121,12 +121,21 @@ export async function POST(req: Request) {
     }
 
     // Save to history
-    await EmailHistory.create({
-      to: to,
-      subject,
-      body: emailBody,
-      status: isDraft ? "DRAFT" : "SENT",
-    });
+    if (id) {
+      await EmailHistory.findByIdAndUpdate(id, {
+        to: to,
+        subject,
+        body: emailBody,
+        status: isDraft ? "DRAFT" : "SENT",
+      });
+    } else {
+      await EmailHistory.create({
+        to: to,
+        subject,
+        body: emailBody,
+        status: isDraft ? "DRAFT" : "SENT",
+      });
+    }
 
     return NextResponse.json({ success: true, count: isDraft ? 0 : targetUsers.length });
   } catch (error) {

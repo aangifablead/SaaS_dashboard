@@ -118,6 +118,7 @@ export default function EmailsClient({ initialHistory }: { initialHistory: any[]
   const [statusFilter, setStatusFilter] = useState("All")
   const [selectedEmail, setSelectedEmail] = useState<any>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
+  const [editingEmailId, setEditingEmailId] = useState<string | null>(null)
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const insertTag = (tag: string) => {
@@ -175,22 +176,39 @@ export default function EmailsClient({ initialHistory }: { initialHistory: any[]
       const res = await fetch("/api/admin/emails/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: toValue, subject, body: parsedBody })
+        body: JSON.stringify({ id: editingEmailId, to: toValue, subject, body: parsedBody })
       });
       if (res.ok) {
         toast.success("Email sent successfully!");
-        // Optimistically prepend to history
-        setHistory([{
-          id: Date.now().toString(),
-          subject,
-          body,
-          recipients: recipientFilter === "Custom" ? customEmail : recipientFilter,
-          sentBy: "Admin",
-          date: new Date().toLocaleString(),
-          status: "Sent"
-        }, ...history]);
+        
+        let newHistory = [...history];
+        const draftIndex = editingEmailId ? newHistory.findIndex((h: any) => h.id === editingEmailId && h.status === 'Draft') : -1;
+
+        if (draftIndex >= 0) {
+          newHistory[draftIndex] = {
+            ...newHistory[draftIndex],
+            subject,
+            body,
+            recipients: recipientFilter === "Custom" ? customEmail : recipientFilter,
+            date: new Date().toLocaleString(),
+            status: "Sent"
+          };
+          setHistory(newHistory);
+        } else {
+          setHistory([{
+            id: Date.now().toString(),
+            subject,
+            body,
+            recipients: recipientFilter === "Custom" ? customEmail : recipientFilter,
+            sentBy: "Admin",
+            date: new Date().toLocaleString(),
+            status: "Sent"
+          }, ...history]);
+        }
+        
         setSubject("");
         setBody("");
+        setEditingEmailId(null);
       } else {
         const errorText = await res.text();
         toast.error(`Failed to send email: ${errorText || res.statusText}`);
@@ -217,19 +235,35 @@ export default function EmailsClient({ initialHistory }: { initialHistory: any[]
       const res = await fetch("/api/admin/emails/send", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ to: toValue, subject, body: parsedBody, isDraft: true })
+        body: JSON.stringify({ id: editingEmailId, to: toValue, subject, body: parsedBody, isDraft: true })
       });
       if (res.ok) {
         toast.success("Draft saved successfully!");
-        setHistory([{
-          id: Date.now().toString(),
-          subject,
-          body,
-          recipients: recipientFilter === "Custom" ? customEmail : recipientFilter,
-          sentBy: "Admin",
-          date: new Date().toLocaleString(),
-          status: "Draft"
-        }, ...history]);
+        
+        let newHistory = [...history];
+        const draftIndex = editingEmailId ? newHistory.findIndex((h: any) => h.id === editingEmailId && h.status === 'Draft') : -1;
+
+        if (draftIndex >= 0) {
+          newHistory[draftIndex] = {
+            ...newHistory[draftIndex],
+            subject,
+            body,
+            recipients: recipientFilter === "Custom" ? customEmail : recipientFilter,
+            date: new Date().toLocaleString(),
+            status: "Draft"
+          };
+          setHistory(newHistory);
+        } else {
+          setHistory([{
+            id: Date.now().toString(),
+            subject,
+            body,
+            recipients: recipientFilter === "Custom" ? customEmail : recipientFilter,
+            sentBy: "Admin",
+            date: new Date().toLocaleString(),
+            status: "Draft"
+          }, ...history]);
+        }
       } else {
         const errorText = await res.text();
         toast.error(`Failed to save draft: ${errorText || res.statusText}`);
@@ -255,6 +289,16 @@ export default function EmailsClient({ initialHistory }: { initialHistory: any[]
   const handleResend = (email: any) => {
     setSubject(email.subject);
     if (email.body) setBody(email.body);
+    setEditingEmailId(email.id);
+    
+    const knownFilters = ["All Users", "Pro Only", "Free Only", "Enterprise Only"];
+    if (knownFilters.includes(email.recipients)) {
+      setRecipientFilter(email.recipients);
+    } else {
+      setRecipientFilter("Custom");
+      setCustomEmail(email.recipients);
+    }
+
     toast.success("Loaded into editor! Click Send to dispatch.");
     window.scrollTo({ top: 0, behavior: "smooth" });
   };
