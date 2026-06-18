@@ -18,6 +18,7 @@ export async function GET(req: Request) {
     const plan = searchParams.get("plan");
     const role = searchParams.get("role");
     const status = searchParams.get("status");
+    const date = searchParams.get("date");
 
     const skip = (page - 1) * limit;
 
@@ -37,6 +38,13 @@ export async function GET(req: Request) {
     }
     if (status) {
       filter.isActive = status === "active";
+    }
+    if (date) {
+      const startOfDay = new Date(date);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(date);
+      endOfDay.setHours(23, 59, 59, 999);
+      filter.createdAt = { $gte: startOfDay, $lte: endOfDay };
     }
 
     await dbConnect();

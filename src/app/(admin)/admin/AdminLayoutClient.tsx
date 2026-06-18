@@ -36,6 +36,21 @@ export default function AdminLayoutClient({ children, user, platformName = "Admi
   const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   
+  const getAvatarSrc = (image?: string) => {
+    if (!image) return "";
+    return image.startsWith("http") ? image : "";
+  };
+
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  };
+  const initial = getInitials(user.name || "");
+
   const pathParts = pathname.split('/').filter(Boolean)
   const pageName = pathParts.length > 1 ? pathParts[1].charAt(0).toUpperCase() + pathParts[1].slice(1) : "Dashboard"
   
@@ -144,13 +159,13 @@ export default function AdminLayoutClient({ children, user, platformName = "Admi
 
       <div className="p-4 border-t border-[#1e293b]">
         <div className="flex items-center gap-3">
-          <Avatar>
-            <AvatarImage src={user.image} />
-            <AvatarFallback className="bg-gray-200">
-              <User className="h-5 w-5 text-gray-500" />
+          <Avatar className="h-10 w-10 border border-gray-700 bg-gray-800 shrink-0">
+            <AvatarImage src={getAvatarSrc(user.image)} />
+            <AvatarFallback className="bg-gray-800 text-gray-200 font-semibold">
+              {initial}
             </AvatarFallback>
           </Avatar>
-          <div className="min-w-0">
+          <div className="min-w-0 flex-1">
             <p className="text-sm font-medium text-white truncate">{user.name}</p>
             <p className="text-xs text-gray-400 truncate">{user.email}</p>
           </div>
@@ -201,10 +216,10 @@ export default function AdminLayoutClient({ children, user, platformName = "Admi
             <DropdownMenu>
               <DropdownMenuTrigger className="flex items-center gap-2 hover:bg-gray-100 p-1 rounded-full sm:rounded-md sm:px-2 transition-colors focus:outline-none">
                 <span className="text-sm font-medium hidden sm:inline">{user.name}</span>
-                <Avatar className="h-8 w-8">
-                  <AvatarImage src={user.image} />
-                  <AvatarFallback className="bg-gray-200">
-                    <User className="h-4 w-4 text-gray-500" />
+                <Avatar className="h-8 w-8 shrink-0">
+                  <AvatarImage src={getAvatarSrc(user.image)} />
+                  <AvatarFallback className="bg-indigo-100 text-indigo-700 font-semibold text-xs">
+                    {initial}
                   </AvatarFallback>
                 </Avatar>
               </DropdownMenuTrigger>

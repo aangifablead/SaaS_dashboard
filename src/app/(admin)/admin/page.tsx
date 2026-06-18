@@ -5,16 +5,46 @@ import DashboardClient from "./DashboardClient"
 
 export default async function AdminDashboardPage() {
   await dbConnect()
+  const now = new Date()
+  const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1)
+  const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1)
+  const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999)
+  const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate())
+  const startOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1)
+  const endOfYesterday = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 1, 23, 59, 59, 999)
+
   const usersCount = await User.countDocuments()
   const activeSubsCount = await User.countDocuments({ isActive: true, plan: { $ne: 'FREE' } })
   const newUsersCount = await User.countDocuments({
-    createdAt: {
-      $gte: new Date(new Date().getFullYear(), new Date().getMonth(), 1)
-    }
+    createdAt: { $gte: startOfThisMonth }
   })
+  
+  // 1. Users Diff
+  const totalUsersLastMonth = await User.countDocuments({ createdAt: { $lte: endOfLastMonth } })
+  const usersDiff = usersCount - totalUsersLastMonth
+
+  // 2. Active Subs Percent
+  const activeSubsLastMonth = await User.countDocuments({ isActive: true, plan: { $ne: 'FREE' }, createdAt: { $lte: endOfLastMonth } })
+  const activeSubsDiff = activeSubsCount - activeSubsLastMonth
+  const activeSubsPercent = activeSubsLastMonth === 0 ? (activeSubsCount > 0 ? 100 : 0) : ((activeSubsDiff / activeSubsLastMonth) * 100).toFixed(1)
+
+  // 3. New Users Percent
+  const newUsersLastMonth = await User.countDocuments({
+    createdAt: { $gte: startOfLastMonth, $lte: endOfLastMonth }
+  })
+  const newUsersDiff = newUsersCount - newUsersLastMonth
+  const newUsersPercent = newUsersLastMonth === 0 ? (newUsersCount > 0 ? 100 : 0) : ((newUsersDiff / newUsersLastMonth) * 100).toFixed(1)
 
   const invoices = await Invoice.find({ status: { $in: ['Paid', 'PAID'] } }).lean()
   const totalRevenue = invoices.reduce((acc: number, curr: any) => acc + curr.amount, 0)
+  
+  // 4. Revenue Percent
+  const thisMonthInvoices = invoices.filter((inv: any) => new Date(inv.createdAt) >= startOfThisMonth)
+  const lastMonthInvoices = invoices.filter((inv: any) => new Date(inv.createdAt) >= startOfLastMonth && new Date(inv.createdAt) <= endOfLastMonth)
+  const thisMonthRevenue = thisMonthInvoices.reduce((acc: number, curr: any) => acc + curr.amount, 0)
+  const lastMonthRevenue = lastMonthInvoices.reduce((acc: number, curr: any) => acc + curr.amount, 0)
+  const revenueDiff = thisMonthRevenue - lastMonthRevenue
+  const revenuePercent = lastMonthRevenue === 0 ? (thisMonthRevenue > 0 ? 100 : 0) : ((revenueDiff / lastMonthRevenue) * 100).toFixed(1)
 
   // Calculate real revenue data for charts (last 6 months)
   const months = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
@@ -61,6 +91,10 @@ export default async function AdminDashboardPage() {
       activeSubs={activeSubsCount}
       newUsers={newUsersCount}
       totalRevenue={totalRevenue}
+      revenuePercent={revenuePercent}
+      usersDiff={usersDiff}
+      activeSubsPercent={activeSubsPercent}
+      newUsersPercent={newUsersPercent}
       recentUsers={recentUsers}
       revenueData={revenueData}
       planData={formattedPlanData.length > 0 ? formattedPlanData : [

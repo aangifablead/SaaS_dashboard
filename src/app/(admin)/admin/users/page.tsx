@@ -25,6 +25,9 @@ import {
   Minus
 } from "lucide-react"
 
+import { useSettings } from "@/components/providers/SettingsProvider"
+import { formatDate } from "@/lib/formatters"
+
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import {
   DropdownMenu,
@@ -54,6 +57,7 @@ export default function AdminUsersPage() {
   const [planFilter, setPlanFilter] = useState("All Plans")
   const [roleFilter, setRoleFilter] = useState("All Roles")
   const [statusFilter, setStatusFilter] = useState("All Status")
+  const [dateFilter, setDateFilter] = useState("")
   
   // Dropdown state
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
@@ -70,11 +74,27 @@ export default function AdminUsersPage() {
     search: searchQuery,
     plan: planFilter === "All Plans" ? "" : planFilter.toUpperCase(),
     role: roleFilter === "All Roles" ? "" : roleFilter.toUpperCase(),
-    status: statusFilter === "All Status" ? "" : statusFilter.toLowerCase()
+    status: statusFilter === "All Status" ? "" : statusFilter.toLowerCase(),
+    date: dateFilter
   }).toString();
 
   const { data, isLoading, mutate } = useSWR(`/api/admin/users?${query}`, fetcher);
   const { data: orgData } = useSWR(`/api/admin/organizations`, fetcher);
+  const settings = useSettings();
+
+  const getInitials = (name: string) => {
+    if (!name) return "U";
+    const parts = name.trim().split(" ");
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+    return parts[0][0].toUpperCase();
+  };
+
+  const getAvatarSrc = (image?: string) => {
+    if (!image) return "";
+    return image.startsWith("http") ? image : "";
+  };
 
   const currentData = useMemo(() => {
     if (!data?.users) return [];
@@ -85,12 +105,13 @@ export default function AdminUsersPage() {
       role: u.role === 'ADMIN' ? 'Admin' : 'User',
       plan: u.plan === 'FREE' ? 'Free' : u.plan === 'PRO' ? 'Pro' : 'Enterprise',
       status: u.isActive ? 'Active' : 'Inactive',
-      joinedDate: u.createdAt ? new Date(u.createdAt).toISOString().split('T')[0] : 'N/A',
+      joinedDate: u.createdAt ? formatDate(u.createdAt, settings.dateFormat, settings.timezone) : 'N/A',
       lastActive: 'Active recently',
-      avatarInitial: (u.name || 'U').substring(0, 2).toUpperCase(),
+      avatarInitial: getInitials(u.name || ''),
+      image: u.image,
       organizationId: u.organization ? (u.organization._id || u.organization.id) : null
     }));
-  }, [data]);
+  }, [data, settings.dateFormat, settings.timezone]);
 
   const totalPages = data?.totalPages || 1;
   const totalCount = data?.totalCount || 0;
@@ -271,6 +292,22 @@ export default function AdminUsersPage() {
     }
   }
 
+  const handleBulkChangePlan = async (plan: string) => {
+    try {
+      const res = await fetch(`/api/admin/users/bulk`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userIds: Array.from(selectedUsers), updates: { plan } })
+      })
+      if (res.ok) {
+        mutate()
+        setSelectedUsers(new Set())
+        setShowToast(true)
+        setTimeout(() => setShowToast(false), 3000)
+      }
+    } catch (e) {}
+  }
+
   return (
     <div className="space-y-6 bg-[#f8fafc] min-h-full pb-10">
       
@@ -325,17 +362,33 @@ export default function AdminUsersPage() {
       {/* FILTER BAR */}
       <div className="bg-white p-4 rounded-xl shadow-sm border border-transparent">
         <div className="flex flex-col lg:flex-row gap-4 items-start lg:items-center justify-between">
-          <div className="relative w-full lg:w-96">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-            <input 
-              type="text" 
-              placeholder="Search users..." 
-              value={searchQuery}
-              onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
-              className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#6366f1] focus:border-transparent transition-all"
-            />
+          <div className="flex flex-col sm:flex-row w-full lg:w-[450px] gap-3">
+            <div className="relative flex-1 w-full">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <input 
+                type="text" 
+                placeholder="Search users..." 
+                value={searchQuery}
+                onChange={(e) => { setSearchQuery(e.target.value); setCurrentPage(1); }}
+                className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#6366f1] focus:border-transparent transition-all"
+              />
+            </div>
+            <button 
+              onClick={() => {
+                setSearchQuery("");
+                setPlanFilter("All Plans");
+                setRoleFilter("All Roles");
+                setStatusFilter("All Status");
+                setDateFilter("");
+                setCurrentPage(1);
+              }}
+              className="flex items-center justify-center gap-1.5 text-sm font-medium text-[#6366f1] bg-[#eef2ff] hover:bg-[#e0e7ff] px-3 py-2 rounded-lg transition-colors whitespace-nowrap shrink-0 border border-[#c7d2fe] sm:w-auto w-full"
+            >
+              <RefreshCw className="h-3.5 w-3.5" />
+              Reset
+            </button>
           </div>
-          <div className="grid grid-cols-2 sm:flex sm:flex-wrap items-center gap-2 w-full lg:w-auto">
+          <div className="flex flex-wrap items-center gap-3 w-full lg:w-auto">
             <select 
               value={planFilter}
               onChange={(e) => { setPlanFilter(e.target.value); setCurrentPage(1); }}
@@ -365,22 +418,16 @@ export default function AdminUsersPage() {
               <option>Inactive</option>
               <option>Suspended</option>
             </select>
-            <div className="relative w-full sm:w-auto col-span-2 sm:col-span-1">
-              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
-              <input type="text" placeholder="Joined date" className="w-full sm:w-40 pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#6366f1]" />
+            <div className="relative w-full sm:w-auto flex-grow sm:flex-grow-0">
+              <CalendarIcon className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400 pointer-events-none" />
+              <input 
+                type="date" 
+                max={new Date().toISOString().split("T")[0]}
+                value={dateFilter}
+                onChange={(e) => { setDateFilter(e.target.value); setCurrentPage(1); }}
+                className="w-full sm:w-40 pl-9 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-[#6366f1]" 
+              />
             </div>
-            <button 
-              onClick={() => {
-                setSearchQuery("");
-                setPlanFilter("All Plans");
-                setRoleFilter("All Roles");
-                setStatusFilter("All Status");
-                setCurrentPage(1);
-              }}
-              className="text-sm font-medium text-[#6366f1] hover:underline px-2 col-span-2 sm:col-span-1 text-center sm:text-left"
-            >
-              Reset filters
-            </button>
           </div>
         </div>
       </div>
@@ -390,9 +437,16 @@ export default function AdminUsersPage() {
         <div className="bg-[#eef2ff] border border-[#c7d2fe] rounded-xl p-3 flex flex-col sm:flex-row items-center justify-between gap-3 animate-in slide-in-from-top-2">
           <span className="text-sm font-medium text-[#4f46e5] px-2">{selectedUsers.size} users selected</span>
           <div className="flex flex-wrap gap-2 justify-center sm:justify-end w-full sm:w-auto">
-            <button className="flex items-center px-3 py-1.5 text-sm font-medium text-[#4f46e5] bg-white border border-[#c7d2fe] rounded-lg hover:bg-[#eef2ff]">
-              Change Plan <ChevronDown className="ml-1 h-4 w-4" />
-            </button>
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center px-3 py-1.5 text-sm font-medium text-[#4f46e5] bg-white border border-[#c7d2fe] rounded-lg hover:bg-[#eef2ff] transition-colors focus:outline-none">
+                Change Plan <ChevronDown className="ml-1 h-4 w-4" />
+              </DropdownMenuTrigger>
+              <DropdownMenuContent>
+                <DropdownMenuItem onClick={() => handleBulkChangePlan('FREE')} className="cursor-pointer">Free</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkChangePlan('PRO')} className="cursor-pointer">Pro</DropdownMenuItem>
+                <DropdownMenuItem onClick={() => handleBulkChangePlan('ENTERPRISE')} className="cursor-pointer">Enterprise</DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
             <button className="flex items-center px-3 py-1.5 text-sm font-medium text-[#4f46e5] bg-white border border-[#c7d2fe] rounded-lg hover:bg-[#eef2ff]">
               Export Selected
             </button>
@@ -445,8 +499,8 @@ export default function AdminUsersPage() {
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-3">
                         <Avatar>
-                          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${user.avatarInitial}&backgroundColor=e2e8f0`} />
-                          <AvatarFallback className="bg-gray-200 text-gray-700">{user.avatarInitial}</AvatarFallback>
+                          <AvatarImage src={getAvatarSrc(user.image)} />
+                          <AvatarFallback className="bg-indigo-100 text-indigo-700 font-semibold">{user.avatarInitial}</AvatarFallback>
                         </Avatar>
                         <div>
                           <div className="font-semibold text-[#0f172a]">{user.name}</div>
@@ -676,8 +730,8 @@ export default function AdminUsersPage() {
                 <>
                   <div className="flex flex-col items-center text-center">
                     <Avatar className="h-20 w-20 ring-4 ring-white shadow-sm mb-3">
-                      <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${viewingUser.avatarInitial}&backgroundColor=e2e8f0`} />
-                      <AvatarFallback className="text-xl">{viewingUser.avatarInitial}</AvatarFallback>
+                      <AvatarImage src={getAvatarSrc(viewingUser.image)} />
+                      <AvatarFallback className="text-xl bg-indigo-100 text-indigo-700 font-semibold">{viewingUser.avatarInitial}</AvatarFallback>
                     </Avatar>
                     <h3 className="font-bold text-xl text-[#0f172a]">{viewingUser.name}</h3>
                     <p className="text-[#6366f1] text-sm font-medium mt-1">{viewingUser.role}</p>
@@ -746,8 +800,8 @@ export default function AdminUsersPage() {
                     <>
                       <div className="flex items-center gap-4 mb-2">
                         <Avatar className="h-16 w-16">
-                          <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${editingUser.avatarInitial}&backgroundColor=e2e8f0`} />
-                          <AvatarFallback>{editingUser.avatarInitial}</AvatarFallback>
+                          <AvatarImage src={getAvatarSrc(editingUser.image)} />
+                          <AvatarFallback className="bg-indigo-100 text-indigo-700 font-semibold text-lg">{editingUser.avatarInitial}</AvatarFallback>
                         </Avatar>
                         <div>
                           <h3 className="font-bold text-lg text-[#0f172a]">{editingUser.name}</h3>

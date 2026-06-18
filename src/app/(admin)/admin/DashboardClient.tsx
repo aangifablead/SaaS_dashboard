@@ -18,7 +18,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { useSettings } from "@/components/providers/SettingsProvider"
 import { formatCurrency, formatDate } from "@/lib/formatters"
 
-export default function DashboardClient({ totalUsers, activeSubs, newUsers, totalRevenue, recentUsers, planData, revenueData }: any) {
+export default function DashboardClient({ totalUsers, activeSubs, newUsers, totalRevenue, recentUsers, planData, revenueData, revenuePercent, usersDiff, activeSubsPercent, newUsersPercent }: any) {
   const settings = useSettings()
 
   return (
@@ -38,7 +38,9 @@ export default function DashboardClient({ totalUsers, activeSubs, newUsers, tota
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-purple-600">{formatCurrency(totalRevenue, settings.currency)}</div>
-            <p className="text-xs text-muted-foreground">+20.1% from last month</p>
+            <p className="text-xs text-muted-foreground">
+              {Number(revenuePercent) >= 0 ? '+' : ''}{revenuePercent}% from last month
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -48,7 +50,9 @@ export default function DashboardClient({ totalUsers, activeSubs, newUsers, tota
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-blue-600">{totalUsers}</div>
-            <p className="text-xs text-muted-foreground">+180 from last month</p>
+            <p className="text-xs text-muted-foreground">
+              {Number(usersDiff) >= 0 ? '+' : ''}{usersDiff} from last month
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -58,7 +62,9 @@ export default function DashboardClient({ totalUsers, activeSubs, newUsers, tota
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">{activeSubs}</div>
-            <p className="text-xs text-muted-foreground">+19% from last month</p>
+            <p className="text-xs text-muted-foreground">
+              {Number(activeSubsPercent) >= 0 ? '+' : ''}{activeSubsPercent}% from last month
+            </p>
           </CardContent>
         </Card>
         <Card>
@@ -68,7 +74,9 @@ export default function DashboardClient({ totalUsers, activeSubs, newUsers, tota
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-orange-600">{newUsers}</div>
-            <p className="text-xs text-muted-foreground">+2 since yesterday</p>
+            <p className="text-xs text-muted-foreground">
+              {Number(newUsersPercent) >= 0 ? '+' : ''}{newUsersPercent}% from last month
+            </p>
           </CardContent>
         </Card>
       </div>
@@ -98,7 +106,7 @@ export default function DashboardClient({ totalUsers, activeSubs, newUsers, tota
         </CardContent>
       </Card>
 
-      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-7">
+      <div className="grid gap-4 grid-cols-1 lg:grid-cols-7">
         <Card className="lg:col-span-4">
           <CardHeader>
             <CardTitle>Recent Users</CardTitle>
@@ -106,28 +114,42 @@ export default function DashboardClient({ totalUsers, activeSubs, newUsers, tota
           <CardContent>
             <div className="space-y-4">
               {recentUsers.map((user: any) => {
-                const initial = (user.name || "U").substring(0, 2).toUpperCase();
+                const getAvatarSrc = (image?: string) => {
+                  if (!image) return "";
+                  return image.startsWith("http") ? image : "";
+                };
+                const getInitials = (name: string) => {
+                  if (!name) return "U";
+                  const parts = name.trim().split(" ");
+                  if (parts.length >= 2) {
+                    return (parts[0][0] + parts[1][0]).toUpperCase();
+                  }
+                  return parts[0][0].toUpperCase();
+                };
+                const nameStr = user.name || "Unknown";
+                const initial = getInitials(nameStr);
                 const planName = user.plan === 'PRO' ? 'Pro' : user.plan === 'ENTERPRISE' ? 'Enterprise' : 'Free';
                 return (
-                <div key={user.id} className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <Avatar>
-                      <AvatarImage src={`https://api.dicebear.com/7.x/avataaars/svg?seed=${initial}`} />
-                      <AvatarFallback>{initial}</AvatarFallback>
+                <div key={user.id} className="flex items-center justify-between gap-2 overflow-hidden">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <Avatar className="shrink-0">
+                      {/* Removed dicebear AvatarImage to show initials fallback */}
+                      <AvatarImage src={getAvatarSrc(user.image)} />
+                      <AvatarFallback className="bg-indigo-100 text-indigo-700 font-semibold">{initial}</AvatarFallback>
                     </Avatar>
-                    <div>
-                      <p className="text-sm font-medium leading-none">{user.name}</p>
-                      <p className="text-sm text-muted-foreground">{user.email}</p>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium leading-none truncate">{user.name}</p>
+                      <p className="text-sm text-muted-foreground truncate">{user.email}</p>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${user.plan === 'PRO' ? 'bg-indigo-100 text-indigo-800' :
+                  <div className="flex items-center gap-2 sm:gap-4 shrink-0">
+                    <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-semibold shrink-0 ${user.plan === 'PRO' ? 'bg-indigo-100 text-indigo-800' :
                         user.plan === 'ENTERPRISE' ? 'bg-purple-100 text-purple-800' :
                           'bg-gray-100 text-gray-800'
                       }`}>
                       {planName}
                     </span>
-                    <span className="text-xs text-muted-foreground w-24 text-right">{formatDate(user.createdAt, settings.dateFormat, settings.timezone)}</span>
+                    <span className="hidden sm:inline text-xs text-muted-foreground w-20 text-right shrink-0">{formatDate(user.createdAt, settings.dateFormat, settings.timezone)}</span>
                   </div>
                 </div>
               )})}
