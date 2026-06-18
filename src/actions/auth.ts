@@ -2,6 +2,7 @@
 
 import dbConnect from "@/lib/mongoose"
 import { User } from "@/models/User"
+import { PlatformSetting } from "@/models/PlatformSetting"
 import { hash } from "bcryptjs"
 
 export async function registerUser(formData: FormData) {
@@ -14,6 +15,12 @@ export async function registerUser(formData: FormData) {
   }
 
   await dbConnect()
+  
+  const allowRegistration = await PlatformSetting.findOne({ key: "allowPublicRegistration" })
+  if (allowRegistration?.value === "false") {
+    throw new Error("Public registration is currently disabled.")
+  }
+
   const existingUser = await User.findOne({ email })
 
   if (existingUser) {

@@ -3,8 +3,14 @@ import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { CheckCircle2, CreditCard as CreditCardIcon, Download, AlertCircle } from "lucide-react"
+import dbConnect from "@/lib/mongoose"
+import { PlatformSetting } from "@/models/PlatformSetting"
+import { formatCurrency } from "@/lib/formatters"
 
-export default function BillingPage() {
+export default async function BillingPage() {
+  await dbConnect();
+  const currencySetting = await PlatformSetting.findOne({ key: "defaultCurrency" });
+  const currency = currencySetting?.value || "USD ($)";
   return (
     <div className="flex flex-col gap-8 pb-8">
       {/* HEADER */}
@@ -29,7 +35,7 @@ export default function BillingPage() {
                 </div>
                 <p className="text-muted-foreground text-sm mb-6">You are currently on the Pro plan. Your next billing date is Nov 12, 2026.</p>
                 <div className="text-4xl font-extrabold text-foreground mb-6">
-                  ₹999<span className="text-lg font-medium text-muted-foreground">/mo</span>
+                  {formatCurrency(999, currency)}<span className="text-lg font-medium text-muted-foreground">/mo</span>
                 </div>
               </div>
               <div className="space-y-4">
@@ -95,7 +101,7 @@ export default function BillingPage() {
         <Card className="shadow-sm border-border flex flex-col">
           <CardHeader className="pb-4">
             <CardTitle className="text-xl">Free</CardTitle>
-            <div className="mt-2 text-3xl font-extrabold">₹0<span className="text-sm font-medium text-muted-foreground">/mo</span></div>
+            <div className="mt-2 text-3xl font-extrabold">{formatCurrency(0, currency)}<span className="text-sm font-medium text-muted-foreground">/mo</span></div>
           </CardHeader>
           <CardContent className="flex-1 pb-6">
             <ul className="space-y-3 text-sm text-muted-foreground">
@@ -119,7 +125,7 @@ export default function BillingPage() {
               Pro
               <Badge variant="outline" className="bg-background text-primary border-primary font-semibold text-xs">Current Plan</Badge>
             </CardTitle>
-            <div className="mt-2 text-3xl font-extrabold text-foreground">₹999<span className="text-sm font-medium text-muted-foreground">/mo</span></div>
+            <div className="mt-2 text-3xl font-extrabold text-foreground">{formatCurrency(999, currency)}<span className="text-sm font-medium text-muted-foreground">/mo</span></div>
           </CardHeader>
           <CardContent className="flex-1 pt-6 pb-6">
             <ul className="space-y-3 text-sm font-medium text-foreground">
@@ -199,12 +205,12 @@ export default function BillingPage() {
               </TableHeader>
               <TableBody>
                 {[
-                  { id: "INV-2026-010", date: "Oct 12, 2026", amount: "₹999", status: "Paid", statusColor: "bg-success/15 text-success" },
-                  { id: "INV-2026-009", date: "Sep 12, 2026", amount: "₹999", status: "Paid", statusColor: "bg-success/15 text-success" },
-                  { id: "INV-2026-008", date: "Aug 12, 2026", amount: "₹999", status: "Paid", statusColor: "bg-success/15 text-success" },
-                  { id: "INV-2026-007", date: "Jul 12, 2026", amount: "₹999", status: "Paid", statusColor: "bg-success/15 text-success" },
-                  { id: "INV-2026-006", date: "Jun 12, 2026", amount: "₹0", status: "Paid", statusColor: "bg-success/15 text-success", plan: "Free" },
-                  { id: "INV-2026-005", date: "May 12, 2026", amount: "₹0", status: "Paid", statusColor: "bg-success/15 text-success", plan: "Free" },
+                  { id: "INV-2026-010", date: "Oct 12, 2026", amount: formatCurrency(999, currency), status: "Paid", statusColor: "bg-success/15 text-success" },
+                  { id: "INV-2026-009", date: "Sep 12, 2026", amount: formatCurrency(999, currency), status: "Paid", statusColor: "bg-success/15 text-success" },
+                  { id: "INV-2026-008", date: "Aug 12, 2026", amount: formatCurrency(999, currency), status: "Paid", statusColor: "bg-success/15 text-success" },
+                  { id: "INV-2026-007", date: "Jul 12, 2026", amount: formatCurrency(999, currency), status: "Paid", statusColor: "bg-success/15 text-success" },
+                  { id: "INV-2026-006", date: "Jun 12, 2026", amount: formatCurrency(0, currency), status: "Paid", statusColor: "bg-success/15 text-success", plan: "Free" },
+                  { id: "INV-2026-005", date: "May 12, 2026", amount: formatCurrency(0, currency), status: "Paid", statusColor: "bg-success/15 text-success", plan: "Free" },
                 ].map((invoice, i) => (
                   <TableRow key={i} className="hover:bg-accent/50 border-border transition-colors">
                     <TableCell className="pl-6 py-3 font-medium text-sm text-foreground">{invoice.id}</TableCell>

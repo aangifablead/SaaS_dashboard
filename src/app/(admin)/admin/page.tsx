@@ -42,7 +42,7 @@ export default async function AdminDashboardPage() {
 
   // Recent Users
   const recentUsersRaw = await User.find().sort({ createdAt: -1 }).limit(5).lean()
-  const recentUsers = recentUsersRaw.map((u: any) => ({ ...u, id: u._id.toString() }))
+  const recentUsers = JSON.parse(JSON.stringify(recentUsersRaw)).map((u: any) => ({ ...u, id: u._id }))
 
   // Plan Distribution
   const planCounts = await User.aggregate([

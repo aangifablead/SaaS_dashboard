@@ -1,8 +1,15 @@
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Hexagon, CheckCircle2, LayoutDashboard, CreditCard, Users, Zap, Moon, Shield } from 'lucide-react'
+import dbConnect from '@/lib/mongoose'
+import { PlatformSetting } from '@/models/PlatformSetting'
+import { formatCurrency } from '@/lib/formatters'
 
-export default function LandingPage() {
+export default async function LandingPage() {
+  await dbConnect();
+  const currencySetting = await PlatformSetting.findOne({ key: "defaultCurrency" });
+  const currency = currencySetting?.value || "USD ($)";
+
   return (
     <div className="flex flex-col min-h-screen bg-background">
       {/* Navbar */}
@@ -81,7 +88,7 @@ export default function LandingPage() {
               {/* Free Plan */}
               <div className="flex flex-col p-8 bg-background rounded-3xl border shadow-sm">
                 <h3 className="text-2xl font-bold">Free</h3>
-                <div className="mt-4 text-4xl font-extrabold">₹0<span className="text-lg font-normal text-muted-foreground">/mo</span></div>
+                <div className="mt-4 text-4xl font-extrabold">{formatCurrency(0, currency)}<span className="text-lg font-normal text-muted-foreground">/mo</span></div>
                 <ul className="mt-8 space-y-4 flex-1">
                   {['1 User', 'Basic Analytics', 'Community Support'].map(feature => (
                     <li key={feature} className="flex items-center gap-3">
@@ -99,7 +106,7 @@ export default function LandingPage() {
                   <span className="bg-background text-foreground text-xs font-bold px-4 py-1.5 rounded-full uppercase tracking-widest border border-border shadow-md">Popular</span>
                 </div>
                 <h3 className="text-2xl font-bold">Pro</h3>
-                <div className="mt-4 text-4xl font-extrabold">₹999<span className="text-lg font-normal opacity-80">/mo</span></div>
+                <div className="mt-4 text-4xl font-extrabold">{formatCurrency(999, currency)}<span className="text-lg font-normal opacity-80">/mo</span></div>
                 <ul className="mt-8 space-y-4 flex-1">
                   {['Unlimited Users', 'Advanced Analytics', 'Priority Support', 'Custom Domain'].map(feature => (
                     <li key={feature} className="flex items-center gap-3">

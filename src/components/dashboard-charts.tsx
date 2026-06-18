@@ -1,6 +1,8 @@
 "use client"
 
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, PieChart, Pie, Cell, LineChart, Line } from 'recharts'
+import { useSettings } from "@/components/providers/SettingsProvider"
+import { formatCurrency } from "@/lib/formatters"
 
 const revenueData = [
   { month: 'Jan', revenue: 1200000, expenses: 800000 },
@@ -18,6 +20,7 @@ const planData = [
 ]
 
 export function DashboardRevenueChart() {
+  const settings = useSettings()
   return (
     <div className="h-[330px] w-full">
       <ResponsiveContainer width="100%" height="100%">
@@ -37,12 +40,12 @@ export function DashboardRevenueChart() {
             axisLine={false} 
             tickLine={false} 
             tick={{ fill: '#64748b', fontSize: 12 }}
-            tickFormatter={(value) => `₹${(value / 100000).toFixed(0)}L`}
+            tickFormatter={(value) => formatCurrency(value, settings.currency)}
           />
           <CartesianGrid vertical={false} stroke="#e2e8f0" strokeDasharray="3 3" />
           <Tooltip 
             contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1)' }}
-            formatter={(value: any) => [`₹${value.toLocaleString()}`, '']}
+            formatter={(value: any) => [formatCurrency(value, settings.currency), '']}
           />
           <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" />
           <Area type="monotone" dataKey="expenses" stroke="#ef4444" strokeWidth={2} fillOpacity={1} fill="url(#colorExpenses)" />

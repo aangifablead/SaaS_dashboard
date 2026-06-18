@@ -28,6 +28,8 @@ import {
 import toast from "react-hot-toast"
 
 import useSWR from "swr"
+import { useSettings } from "@/components/providers/SettingsProvider"
+import { formatCurrency } from "@/lib/formatters"
 
 const fetcher = (url: string) => fetch(url).then(res => res.json())
 
@@ -38,6 +40,7 @@ export default function OrganizationDetailPage() {
   const [activeDropdown, setActiveDropdown] = useState<string | null>(null)
   const [isEditing, setIsEditing] = useState(false)
   const [editModalOpen, setEditModalOpen] = useState(false)
+  const settings = useSettings()
   
   // Role Change State
   const [roleModalMember, setRoleModalMember] = useState<any>(null)
@@ -260,7 +263,7 @@ export default function OrganizationDetailPage() {
                 <CreditCard className="h-4 w-4" />
                 <span className="text-xs font-medium uppercase tracking-wider">Revenue</span>
               </div>
-              <div className="text-2xl font-bold text-gray-900">{orgData.plan === "FREE" ? "₹0" : orgData.plan === "PRO" ? "₹4,995" : "Custom"}</div>
+              <div className="text-2xl font-bold text-gray-900">{orgData.plan === "FREE" ? formatCurrency(0, settings.currency) : orgData.plan === "PRO" ? formatCurrency(4995, settings.currency) : "Custom"}</div>
             </div>
             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
               <div className="flex items-center gap-2 text-gray-500 mb-2">

@@ -3,6 +3,7 @@
 import dbConnect from "@/lib/mongoose"
 import { User } from "@/models/User"
 import { PasswordResetToken } from "@/models/PasswordResetToken"
+import { PlatformSetting } from "@/models/PlatformSetting"
 import nodemailer from "nodemailer"
 import crypto from "crypto"
 import { hash } from "bcryptjs"
@@ -153,9 +154,27 @@ export async function sendPasswordResetEmail(email: string) {
 </html>
     `
 
+    // Fetch custom sender from settings
+    const [fromEmailSetting, fromNameSetting, supportEmailSetting, platformNameSetting] = await Promise.all([
+      PlatformSetting.findOne({ key: "emailFromEmail" }),
+      PlatformSetting.findOne({ key: "emailFromName" }),
+      PlatformSetting.findOne({ key: "supportEmail" }),
+      PlatformSetting.findOne({ key: "platformName" })
+    ])
+    
+    // Determine raw fallback email
+    const rawEmail = fromEmailSetting?.value || supportEmailSetting?.value || process.env.EMAIL_FROM || process.env.SMTP_USER || "noreply@yourdomain.com"
+    
+    // Extract just the email if it contains brackets (e.g. "Name <email@domain.com>")
+    const emailMatch = rawEmail.match(/<([^>]+)>/)
+    const fromEmail = emailMatch ? emailMatch[1] : rawEmail
+
+    const fromName = fromNameSetting?.value || platformNameSetting?.value || "SaaS Kit"
+    const sender = `"${fromName}" <${fromEmail}>`
+
     // Send the email
     await transporter.sendMail({
-      from: process.env.EMAIL_FROM || '"SaaS Kit" <noreply@yourdomain.com>',
+      from: sender,
       to: email,
       subject: "Action Required: Reset your password",
       html: htmlTemplate,

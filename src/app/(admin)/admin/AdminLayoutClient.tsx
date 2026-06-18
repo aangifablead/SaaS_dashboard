@@ -2,7 +2,7 @@
 
 import { ReactNode, useState, useEffect } from "react"
 import Link from "next/link"
-import { usePathname } from "next/navigation"
+import { usePathname, useRouter } from "next/navigation"
 import { signOut } from "next-auth/react"
 import {
   LayoutDashboard,
@@ -20,9 +20,20 @@ import {
 } from "lucide-react"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+  DropdownMenuGroup,
+} from "@/components/ui/dropdown-menu"
+import NotificationBell from "./NotificationBell"
 
-export default function AdminLayoutClient({ children, user }: { children: ReactNode, user: { name: string, email: string, image: string } }) {
+export default function AdminLayoutClient({ children, user, platformName = "Admin", logo }: { children: ReactNode, user: { name: string, email: string, image: string }, platformName?: string, logo?: string }) {
   const pathname = usePathname()
+  const router = useRouter()
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   
   const pathParts = pathname.split('/').filter(Boolean)
@@ -42,8 +53,12 @@ export default function AdminLayoutClient({ children, user }: { children: ReactN
   const sidebarContent = (
     <>
       <div className="p-6 flex items-center justify-between">
-        <Link href="/admin" className="flex items-center gap-2 text-white font-bold text-xl">
-          <span>⚡ Admin</span>
+        <Link href="/admin" className="flex items-center gap-2 text-white font-bold text-xl truncate">
+          {logo ? (
+            <img src={logo} alt={platformName} className="h-8 w-8 object-contain rounded" />
+          ) : (
+            <span className="truncate">⚡ {platformName}</span>
+          )}
         </Link>
         <button 
           className="md:hidden text-gray-400 hover:text-white" 
@@ -174,29 +189,49 @@ export default function AdminLayoutClient({ children, user }: { children: ReactN
             >
               <Menu className="h-5 w-5" />
             </button>
-            <div className="flex items-center gap-2">
-              <span className="hidden sm:inline">Admin</span> 
+            <div className="flex items-center gap-2 truncate">
+              <span className="hidden sm:inline truncate max-w-[120px]">{platformName}</span> 
               <span className="hidden sm:inline text-gray-300">/</span> 
-              <span className="font-medium text-gray-900 sm:font-normal sm:text-gray-500">{pageName}</span>
+              <span className="font-medium text-gray-900 sm:font-normal sm:text-gray-500 truncate">{pageName}</span>
             </div>
           </div>
           <div className="flex items-center gap-2 sm:gap-4">
-            <button className="text-gray-500 hover:text-gray-700 p-2">
-              <Bell className="size-5" />
-            </button>
-            <div className="flex items-center gap-2">
-              <span className="text-sm font-medium hidden sm:inline">{user.name}</span>
-              <Avatar className="h-8 w-8 sm:hidden">
-                <AvatarImage src={user.image} />
-                <AvatarFallback className="bg-gray-200">
-                  <User className="h-4 w-4 text-gray-500" />
-                </AvatarFallback>
-              </Avatar>
-            </div>
+            <NotificationBell />
+            
+            <DropdownMenu>
+              <DropdownMenuTrigger className="flex items-center gap-2 hover:bg-gray-100 p-1 rounded-full sm:rounded-md sm:px-2 transition-colors focus:outline-none">
+                <span className="text-sm font-medium hidden sm:inline">{user.name}</span>
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user.image} />
+                  <AvatarFallback className="bg-gray-200">
+                    <User className="h-4 w-4 text-gray-500" />
+                  </AvatarFallback>
+                </Avatar>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56">
+                <DropdownMenuGroup>
+                  <DropdownMenuLabel>My Account</DropdownMenuLabel>
+                </DropdownMenuGroup>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => router.push('/admin/profile')} className="cursor-pointer">
+                  <User className="mr-2 h-4 w-4" />
+                  <span>Profile Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem onClick={() => router.push('/admin/settings/smtp')} className="cursor-pointer">
+                  <Mail className="mr-2 h-4 w-4" />
+                  <span>SMTP Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/login' })} className="text-rose-600 cursor-pointer">
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Log out</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </header>
 
-        <div className="flex-1 p-4 sm:p-6 overflow-auto">
+        <div className="flex-1 p-4 sm:p-6 overflow-y-auto overflow-x-hidden relative">
           {children}
         </div>
       </main>

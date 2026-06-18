@@ -2,19 +2,12 @@ import { NextResponse } from "next/server";
 import { auth } from "@/auth";
 import dbConnect from "@/lib/mongoose";
 import { User } from "@/models/User";
+import "@/models/Organization"; // Import for side effects (mongoose schema registration)
 import { EmailHistory } from "@/models/EmailHistory";
+import { PlatformSetting } from "@/models/PlatformSetting";
 import nodemailer from "nodemailer";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.SMTP_HOST || "smtp.gmail.com",
-  port: parseInt(process.env.SMTP_PORT || "587"),
-  secure: process.env.SMTP_SECURE === "true",
-  auth: {
-    user: process.env.SMTP_USER,
-    pass: process.env.SMTP_PASSWORD,
-  },
-});
-
+// Global transporter removed - we will create it dynamically per request
 export async function POST(req: Request) {
   try {
     const session = await auth();
@@ -101,6 +94,50 @@ export async function POST(req: Request) {
     </html>
     `;
 
+    // Fetch custom sender from settings
+    const [
+      fromEmailSetting, 
+      fromNameSetting, 
+      supportEmailSetting, 
+      platformNameSetting,
+      smtpHostSetting,
+      smtpPortSetting,
+      smtpSecureSetting,
+      smtpUserSetting,
+      smtpPasswordSetting
+    ] = await Promise.all([
+      PlatformSetting.findOne({ key: "emailFromEmail" }),
+      PlatformSetting.findOne({ key: "emailFromName" }),
+      PlatformSetting.findOne({ key: "supportEmail" }),
+      PlatformSetting.findOne({ key: "platformName" }),
+      PlatformSetting.findOne({ key: "smtpHost" }),
+      PlatformSetting.findOne({ key: "smtpPort" }),
+      PlatformSetting.findOne({ key: "smtpSecure" }),
+      PlatformSetting.findOne({ key: "smtpUser" }),
+      PlatformSetting.findOne({ key: "smtpPassword" })
+    ]);
+    
+    // Determine raw fallback email
+    const rawEmail = (fromEmailSetting?.value || supportEmailSetting?.value || process.env.EMAIL_FROM || smtpUserSetting?.value || process.env.SMTP_USER || "noreply@example.com").trim();
+    
+    // Extract just the email if it contains brackets (e.g. "Name <email@domain.com>")
+    const emailMatch = rawEmail.match(/<([^>]+)>/);
+    const fromEmail = (emailMatch ? emailMatch[1] : rawEmail).trim();
+
+    const fromName = fromNameSetting?.value || platformNameSetting?.value || "SaaS Dashboard Team";
+    const sender = `"${fromName}" <${fromEmail}>`;
+
+    // Create transporter dynamically using DB settings with ENV fallback
+    const transporter = nodemailer.createTransport({
+      host: smtpHostSetting?.value || process.env.SMTP_HOST || "smtp.gmail.com",
+      port: parseInt(smtpPortSetting?.value || process.env.SMTP_PORT || "587"),
+      secure: (smtpSecureSetting?.value || process.env.SMTP_SECURE) === "true",
+      auth: {
+        user: smtpUserSetting?.value || process.env.SMTP_USER,
+        pass: smtpPasswordSetting?.value || process.env.SMTP_PASSWORD,
+      },
+    });
+
     // Send emails individually to personalize tags only if not a draft
     if (!isDraft) {
       const sendPromises = targetUsers.map(user => {
@@ -110,7 +147,7 @@ export async function POST(req: Request) {
         const personalizedBody = replaceTags(emailBody, user);
         
         return transporter.sendMail({
-          from: process.env.EMAIL_FROM || `"SaaS Dashboard Team" <${process.env.SMTP_USER}>`,
+          from: sender,
           to: user.email,
           subject: personalizedSubject,
           html: emailTemplate(personalizedBody, personalizedSubject),
@@ -140,6 +177,6 @@ export async function POST(req: Request) {
     return NextResponse.json({ success: true, count: isDraft ? 0 : targetUsers.length });
   } catch (error) {
     console.error("[ADMIN_EMAILS_SEND_POST]", error);
-    return new NextResponse("Internal Error", { status: 500 });
+    return new NextResponse(error instanceof Error ? error.message : String(error), { status: 500 });
   }
 }

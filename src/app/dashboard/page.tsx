@@ -6,10 +6,17 @@ import { DashboardRevenueChart, DashboardPlanChart, SparklineChart } from "@/com
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import Link from "next/link"
 import { auth } from "@/auth"
+import dbConnect from "@/lib/mongoose"
+import { PlatformSetting } from "@/models/PlatformSetting"
+import { formatCurrency } from "@/lib/formatters"
 
 export default async function DashboardPage() {
   const session = await auth()
   const userName = session?.user?.name?.split(" ")[0] || "User"
+  
+  await dbConnect();
+  const currencySetting = await PlatformSetting.findOne({ key: "defaultCurrency" });
+  const currency = currencySetting?.value || "USD ($)";
   
   const hour = new Date().getHours()
   let greeting = "Good evening"
@@ -53,7 +60,7 @@ export default async function DashboardPage() {
                   </div>
                   Total Revenue
                 </div>
-                <div className="text-2xl font-bold text-foreground">₹37,54,231.89</div>
+                <div className="text-2xl font-bold text-foreground">{formatCurrency(3754231.89, currency)}</div>
                 <div className="flex items-center gap-2">
                   <Badge className="bg-success/15 text-success hover:bg-success/20 border-none font-semibold px-1.5 py-0">
                     +20.1%
@@ -240,11 +247,11 @@ export default async function DashboardPage() {
                 </TableHeader>
                 <TableBody>
                   {[
-                    { name: "Acme Corp", email: "billing@acme.com", plan: "Enterprise", planColor: "bg-[#faf5ff] text-[#a855f7]", amount: "₹83,000", status: "Paid", statusColor: "bg-success/15 text-success", date: "Today, 10:23 AM" },
-                    { name: "Sarah Johnson", email: "sarah.j@example.com", plan: "Pro", planColor: "bg-primary/10 text-primary", amount: "₹999", status: "Paid", statusColor: "bg-success/15 text-success", date: "Today, 9:45 AM" },
-                    { name: "TechStart Inc", email: "accounts@techstart.io", plan: "Pro", planColor: "bg-primary/10 text-primary", amount: "₹9,990", status: "Pending", statusColor: "bg-warning/15 text-warning", date: "Yesterday" },
-                    { name: "Michael Chen", email: "m.chen@designco.com", plan: "Free", planColor: "bg-accent text-muted-foreground", amount: "₹0", status: "Paid", statusColor: "bg-success/15 text-success", date: "Yesterday" },
-                    { name: "Global Systems", email: "finance@global.net", plan: "Enterprise", planColor: "bg-[#faf5ff] text-[#a855f7]", amount: "₹1,25,000", status: "Failed", statusColor: "bg-destructive/15 text-destructive", date: "Oct 12, 2026" },
+                    { name: "Acme Corp", email: "billing@acme.com", plan: "Enterprise", planColor: "bg-[#faf5ff] text-[#a855f7]", amount: formatCurrency(83000, currency), status: "Paid", statusColor: "bg-success/15 text-success", date: "Today, 10:23 AM" },
+                    { name: "Sarah Johnson", email: "sarah.j@example.com", plan: "Pro", planColor: "bg-primary/10 text-primary", amount: formatCurrency(999, currency), status: "Paid", statusColor: "bg-success/15 text-success", date: "Today, 9:45 AM" },
+                    { name: "TechStart Inc", email: "accounts@techstart.io", plan: "Pro", planColor: "bg-primary/10 text-primary", amount: formatCurrency(9990, currency), status: "Pending", statusColor: "bg-warning/15 text-warning", date: "Yesterday" },
+                    { name: "Michael Chen", email: "m.chen@designco.com", plan: "Free", planColor: "bg-accent text-muted-foreground", amount: formatCurrency(0, currency), status: "Paid", statusColor: "bg-success/15 text-success", date: "Yesterday" },
+                    { name: "Global Systems", email: "finance@global.net", plan: "Enterprise", planColor: "bg-[#faf5ff] text-[#a855f7]", amount: formatCurrency(125000, currency), status: "Failed", statusColor: "bg-destructive/15 text-destructive", date: "Oct 12, 2026" },
                   ].slice(0, 5).map((row, i) => (
                     <TableRow key={i} className="hover:bg-accent/50 border-border cursor-pointer transition-colors">
                       <TableCell className="py-3">
@@ -316,7 +323,7 @@ export default async function DashboardPage() {
       <div className="grid gap-4 md:grid-cols-4">
         {[
           { title: "Conversion Rate", value: "3.24%", subtitle: "vs last month" },
-          { title: "Avg Revenue Per User", value: "₹1,598", subtitle: "vs last month" },
+          { title: "Avg Revenue Per User", value: formatCurrency(1598, currency), subtitle: "vs last month" },
           { title: "Churn Rate", value: "1.2%", subtitle: "vs last month" },
           { title: "Net Promoter Score", value: "72", subtitle: "vs last quarter" },
         ].map((stat, i) => (

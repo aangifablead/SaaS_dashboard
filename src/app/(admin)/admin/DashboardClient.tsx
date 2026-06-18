@@ -1,7 +1,7 @@
 "use client"
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
-import { IndianRupee, Users, CreditCard, UserPlus } from "lucide-react"
+import { Users, CreditCard, UserPlus, DollarSign } from "lucide-react"
 import {
   AreaChart,
   Area,
@@ -15,11 +15,12 @@ import {
   Cell
 } from "recharts"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-
-// recentUsers removed
-
+import { useSettings } from "@/components/providers/SettingsProvider"
+import { formatCurrency, formatDate } from "@/lib/formatters"
 
 export default function DashboardClient({ totalUsers, activeSubs, newUsers, totalRevenue, recentUsers, planData, revenueData }: any) {
+  const settings = useSettings()
+
   return (
     <div className="space-y-6">
       <div className="bg-gradient-to-r from-[#eef2ff] to-white rounded-xl shadow-sm border border-[#c7d2fe] px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
@@ -33,10 +34,10 @@ export default function DashboardClient({ totalUsers, activeSubs, newUsers, tota
         <Card>
           <CardHeader className="flex flex-row items-center justify-between pb-2">
             <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <IndianRupee className="h-4 w-4 text-purple-600" />
+            <DollarSign className="h-4 w-4 text-purple-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-purple-600">₹{totalRevenue.toLocaleString()}</div>
+            <div className="text-2xl font-bold text-purple-600">{formatCurrency(totalRevenue, settings.currency)}</div>
             <p className="text-xs text-muted-foreground">+20.1% from last month</p>
           </CardContent>
         </Card>
@@ -87,7 +88,7 @@ export default function DashboardClient({ totalUsers, activeSubs, newUsers, tota
                   </linearGradient>
                 </defs>
                 <XAxis dataKey="name" stroke="#888888" fontSize={12} tickLine={false} axisLine={false} />
-                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => `₹${value / 1000}k`} />
+                <YAxis stroke="#888888" fontSize={12} tickLine={false} axisLine={false} tickFormatter={(value) => formatCurrency(value, settings.currency)} />
                 <CartesianGrid strokeDasharray="3 3" vertical={false} />
                 <Tooltip />
                 <Area type="monotone" dataKey="total" stroke="#a855f7" fillOpacity={1} fill="url(#colorTotal)" />
@@ -126,7 +127,7 @@ export default function DashboardClient({ totalUsers, activeSubs, newUsers, tota
                       }`}>
                       {planName}
                     </span>
-                    <span className="text-xs text-muted-foreground w-24 text-right">{new Date(user.createdAt).toLocaleDateString()}</span>
+                    <span className="text-xs text-muted-foreground w-24 text-right">{formatDate(user.createdAt, settings.dateFormat, settings.timezone)}</span>
                   </div>
                 </div>
               )})}

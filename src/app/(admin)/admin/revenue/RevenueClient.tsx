@@ -42,10 +42,13 @@ import {
 } from "recharts"
 
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+import { useSettings } from "@/components/providers/SettingsProvider"
+import { formatCurrency } from "@/lib/formatters"
 
 // Mock Data completely removed
 
 export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, mrrData, revenueByPlanData }: any) {
+  const settings = useSettings()
   const [searchQuery, setSearchQuery] = useState("")
   const [filterStatus, setFilterStatus] = useState("All")
   const [currentPage, setCurrentPage] = useState(1)
@@ -58,9 +61,9 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
 
   // Smart formatter to only show +/- signs if the number is actually greater/less than 0
   const formatChange = (val: number) => {
-    if (val === 0) return `₹0`;
-    if (val > 0) return `+₹${val.toLocaleString()}`;
-    return `-₹${Math.abs(val).toLocaleString()}`;
+    if (val === 0) return formatCurrency(0, settings.currency);
+    if (val > 0) return `+${formatCurrency(val, settings.currency)}`;
+    return `-${formatCurrency(Math.abs(val), settings.currency)}`;
   }
 
   // Filter invoices based on search query and status filter
@@ -146,7 +149,7 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
             )}
           </div>
           <p className="text-sm font-medium text-gray-500">Monthly Recurring Revenue</p>
-          <h3 className="text-2xl font-bold text-gray-900 mt-1">₹{mrr.toLocaleString()}</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(mrr, settings.currency)}</h3>
         </div>
 
         {/* ARR */}
@@ -160,7 +163,7 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
             </span>
           </div>
           <p className="text-sm font-medium text-gray-500">Annual Recurring Revenue</p>
-          <h3 className="text-2xl font-bold text-gray-900 mt-1">₹{arr.toLocaleString()}</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(arr, settings.currency)}</h3>
         </div>
 
         {/* Total Revenue */}
@@ -174,7 +177,7 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
             </span>
           </div>
           <p className="text-sm font-medium text-gray-500">Total Revenue</p>
-          <h3 className="text-2xl font-bold text-gray-900 mt-1">₹{totalRevenue.toLocaleString()}</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(totalRevenue, settings.currency)}</h3>
         </div>
 
         {/* ARPU */}
@@ -185,12 +188,12 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
             </div>
             {arpu > 0 && (
               <span className="inline-flex items-center rounded-full bg-green-100 px-2 py-0.5 text-xs font-medium text-green-800">
-                +₹124 vs last month
+                +{formatCurrency(124, settings.currency)} vs last month
               </span>
             )}
           </div>
           <p className="text-sm font-medium text-gray-500">Avg Revenue Per User</p>
-          <h3 className="text-2xl font-bold text-gray-900 mt-1">₹{Math.round(arpu).toLocaleString()}</h3>
+          <h3 className="text-2xl font-bold text-gray-900 mt-1">{formatCurrency(Math.round(arpu), settings.currency)}</h3>
         </div>
       </div>
 
@@ -218,10 +221,10 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
                   axisLine={false} 
                   tickLine={false} 
                   tick={{ fill: '#6b7280', fontSize: 12 }}
-                  tickFormatter={(val) => `₹${val / 1000}k`}
+                  tickFormatter={(val) => formatCurrency(val, settings.currency)}
                 />
                 <Tooltip 
-                  formatter={(value: any) => [`₹${Number(value).toLocaleString()}`, 'MRR']}
+                  formatter={(value: any) => [formatCurrency(Number(value), settings.currency), 'MRR']}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
                 <Line 
@@ -252,10 +255,10 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
                   axisLine={false} 
                   tickLine={false} 
                   tick={{ fill: '#6b7280', fontSize: 12 }}
-                  tickFormatter={(val) => `₹${val / 1000}k`}
+                  tickFormatter={(val) => formatCurrency(val, settings.currency)}
                 />
                 <Tooltip 
-                  formatter={(value: any) => [`₹${Number(value).toLocaleString()}`, undefined]}
+                  formatter={(value: any) => [formatCurrency(Number(value), settings.currency), undefined]}
                   cursor={{ fill: '#f3f4f6' }}
                   contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }}
                 />
@@ -368,7 +371,7 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
                     </span>
                   </td>
                   <td className="px-6 py-4 font-medium text-gray-900">
-                    ₹{tx.amount.toLocaleString()}
+                    {formatCurrency(tx.amount, settings.currency)}
                   </td>
                   <td className="px-6 py-4">
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-2 py-0.5 text-xs font-medium border ${
