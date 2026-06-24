@@ -1,43 +1,37 @@
 # SaaS Dashboard
 
-A modern, full-stack SaaS Dashboard template built with Next.js 16 (App Router), React 19, and Tailwind CSS v4. This platform features a complete authentication flow, team management, interactive analytics, and subscription handling.
+A full-stack SaaS Dashboard template built with Next.js 16 (App Router), React 19, and Tailwind CSS v4.
 
 ## Features
 
-- **Modern Tech Stack**: Built on the cutting edge with Next.js 16, React 19, and Tailwind CSS v4.
-- **Authentication**: Secure login, registration, and session management powered by NextAuth.js (v5) and MongoDB.
-- **Team Management**: Invite members via email, manage user roles (Admin/Member), suspend users, and handle account revocations.
-- **Interactive Analytics**: Beautiful, responsive charts utilizing `recharts` for tracking page views, active sessions, and signup trends.
-- **Billing & Subscriptions**: Integration-ready with Stripe for handling SaaS tier plans (Free, Pro, Enterprise).
-- **Email Notifications**: Seamless email delivery via Resend/Nodemailer for team invitations and password resets.
-- **Beautiful UI components**: Styled with Shadcn UI, customized for a premium dashboard aesthetic (vibrant charts, micro-animations, glassmorphism elements).
-- **Dark Mode**: Fully supported dark/light theme toggling using `next-themes`.
+- **Authentication**: NextAuth.js (v5) with MongoDB adapter for secure login and session management.
+- **Team Management**: Invite members via email, manage user roles (Admin/Member), and handle account suspension or deletion.
+- **Analytics**: Dynamic charts (via Recharts) tracking active sessions and signups based on user login events.
+- **Billing**: Ready for Stripe integration to manage tiered plans (Free, Pro, Enterprise).
+- **Email**: Resend / Nodemailer configured for sending secure, token-based team invitations.
+- **UI Components**: Shadcn UI styled with Tailwind CSS v4 for a clean, responsive, and accessible layout.
 
 ## Tech Stack
 
-- **Framework**: [Next.js 16](https://nextjs.org/) (App Router & Turbopack)
-- **Styling**: [Tailwind CSS v4](https://tailwindcss.com/)
-- **UI Components**: [Shadcn UI](https://ui.shadcn.com/) & [@base-ui/react](https://base-ui.com/)
-- **Database**: [MongoDB](https://www.mongodb.com/) via [Mongoose](https://mongoosejs.com/)
-- **Authentication**: [NextAuth.js (v5)](https://authjs.dev/) with `@auth/mongodb-adapter`
-- **Charts**: [Recharts](https://recharts.org/)
-- **Payments**: [Stripe](https://stripe.com/)
-- **Email**: [Resend](https://resend.com/)
+- **Framework:** Next.js 16.2
+- **Language:** TypeScript
+- **Styling:** Tailwind CSS v4
+- **Database:** MongoDB via Mongoose
+- **Authentication:** Auth.js (NextAuth)
 
 ## Getting Started
 
 ### Prerequisites
 
-Ensure you have the following installed on your machine:
-- Node.js (v20 or higher)
-- npm or pnpm
-- MongoDB instance (local or Atlas)
+- Node.js 20+
+- MongoDB instance (Atlas or local)
+- Resend API key (for emails)
 
 ### Installation
 
 1. Clone the repository:
    ```bash
-   git clone <repository-url>
+   git clone <your-repo-url>
    cd saas_dashboard
    ```
 
@@ -46,21 +40,17 @@ Ensure you have the following installed on your machine:
    npm install
    ```
 
-3. Create a `.env` file in the root directory and add your environment variables:
+3. Configure Environment Variables:
+   Create a `.env` file in the root directory and add the following keys:
    ```env
-   # Database
-   MONGODB_URI=mongodb+srv://<user>:<password>@cluster.mongodb.net/saas
-
-   # NextAuth
+   MONGODB_URI=your_mongodb_connection_string
    NEXTAUTH_URL=http://localhost:3000
-   AUTH_SECRET=your_super_secret_string
+   AUTH_SECRET=your_auth_secret
 
-   # Emails (Resend or SMTP)
-   RESEND_API_KEY=your_resend_api_key
-
-   # Stripe
-   STRIPE_SECRET_KEY=your_stripe_secret_key
-   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_pub_key
+   RESEND_API_KEY=your_resend_key
+   
+   STRIPE_SECRET_KEY=your_stripe_secret
+   NEXT_PUBLIC_STRIPE_PUBLISHABLE_KEY=your_stripe_public
    ```
 
 4. Run the development server:
@@ -68,26 +58,20 @@ Ensure you have the following installed on your machine:
    npm run dev
    ```
 
-5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the application.
-
-## Core Features Breakdown
-
-### Team Invitations
-Admins can send email invitations to new members. Next.js server actions handle creating a secure one-time-use token, saving it to MongoDB, and sending the email link. When the recipient clicks the link, they are taken to a dedicated onboarding page.
-
-### Dynamic Analytics
-The analytics page features real-time, database-driven metrics. It automatically pulls `LoginEvents` to track active sessions, session durations, and user locations, plotting them elegantly on interactive charts.
-
-### User Management
-From the team settings page, Admins can view complete user profiles, change subscription plans, assign roles, or safely suspend/delete accounts. Actions are guarded by backend authorization checks.
+5. Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
 
 ## Project Structure
 
-- `/src/app`: Next.js App Router pages and API endpoints.
-- `/src/components`: Reusable UI components (buttons, dialogs, charts, layout headers).
-- `/src/models`: Mongoose database schemas (User, Invite, LoginEvent).
-- `/src/lib`: Utility functions, database connection instances, and Mongoose configurations.
-- `/src/auth.ts`: NextAuth configuration and callback logic.
+- `src/app`: Next.js App Router pages and API endpoints.
+- `src/components`: Reusable UI components.
+- `src/models`: Mongoose database schemas.
+- `src/lib`: Utilities and database configuration.
+- `src/auth.ts`: Authentication setup and callbacks.
+
+## Contributing
+
+Pull requests are welcome. For major changes, please open an issue first to discuss what you would like to change.
 
 ## License
-MIT License
+
+[MIT](https://choosealicense.com/licenses/mit/)
