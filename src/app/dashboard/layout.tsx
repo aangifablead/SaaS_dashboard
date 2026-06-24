@@ -9,6 +9,7 @@ import { LayoutDashboard, Settings, CreditCard, Menu, Hexagon, LogOut, Users, Za
 import { SidebarNav } from "@/components/sidebar-nav"
 import { Badge } from "@/components/ui/badge"
 import { LogoutButton } from "@/components/logout-button"
+import DashboardNotificationBell from "@/components/layout/DashboardNotificationBell"
 
 export default async function DashboardLayout({
   children,
@@ -89,10 +90,7 @@ export default async function DashboardLayout({
           </div>
           
           <div className="flex items-center justify-end gap-4 ml-auto">
-            <Button variant="ghost" size="icon" className="relative rounded-full hover:bg-muted">
-              <Bell className="h-5 w-5 text-muted-foreground" />
-              <Badge className="absolute -top-1 -right-1 h-5 w-5 flex items-center justify-center p-0 rounded-full bg-destructive border-2 border-background">3</Badge>
-            </Button>
+            <DashboardNotificationBell />
             <div className="h-8 w-px bg-border mx-1"></div>
             <UserNav user={session.user!} />
           </div>

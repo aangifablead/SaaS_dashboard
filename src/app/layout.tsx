@@ -99,7 +99,7 @@ export default async function RootLayout({
     <html lang="en" suppressHydrationWarning className="h-full antialiased">
       <head>
         <Script
-          id="theme-script"
+          id="accent-color-script"
           strategy="beforeInteractive"
           dangerouslySetInnerHTML={{
             __html: `

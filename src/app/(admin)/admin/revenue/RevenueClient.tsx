@@ -119,15 +119,15 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
       {/* HEADER */}
       <div className="bg-gradient-to-r from-[#eef2ff] to-white rounded-xl shadow-sm border border-[#c7d2fe] px-6 py-4 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <h1 className="text-2xl font-bold tracking-tight text-[#0f172a]">Revenue & Payments</h1>
-        <div className="flex items-center gap-3">
-          <select className="rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm focus:border-[#6366f1] outline-none">
+        <div className="flex flex-wrap items-center gap-3 w-full sm:w-auto">
+          <select className="flex-1 sm:flex-none rounded-md border border-gray-300 bg-white px-3 py-2 text-sm font-medium text-gray-700 shadow-sm focus:border-[#6366f1] outline-none">
             <option>This Month</option>
             <option>Last Month</option>
             <option>Last 3 Months</option>
             <option>This Year</option>
             <option>All Time</option>
           </select>
-          <button onClick={handleExport} className="inline-flex items-center justify-center rounded-md border border-[#c7d2fe] bg-white px-4 py-2 text-sm font-medium text-[#4f46e5] shadow-sm hover:bg-[#eef2ff] transition-colors">
+          <button onClick={handleExport} className="flex-1 sm:flex-none whitespace-nowrap inline-flex items-center justify-center rounded-md border border-[#c7d2fe] bg-white px-4 py-2 text-sm font-medium text-[#4f46e5] shadow-sm hover:bg-[#eef2ff] transition-colors">
             <Download className="mr-2 h-4 w-4" />
             Export Report
           </button>
@@ -273,7 +273,7 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
       </div>
 
       {/* FULL WIDTH: Churn & Growth Metrics */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
+      <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-4 bg-indigo-50/50 p-4 rounded-xl border border-indigo-100">
         <div className="p-4 bg-white rounded-lg shadow-sm border border-gray-100">
           <p className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">New MRR</p>
           <div className="text-xl font-bold text-green-600">{formatChange(newMrr)}</div>
@@ -299,14 +299,14 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
       {/* ALL TRANSACTIONS TABLE */}
       <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-2">
-            <h3 className="font-bold text-gray-900">All Transactions</h3>
-            <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-700">
+          <div className="flex flex-wrap items-center gap-2">
+            <h3 className="font-bold text-gray-900 whitespace-nowrap">All Transactions</h3>
+            <span className="inline-flex items-center rounded-full bg-gray-200 px-2.5 py-0.5 text-xs font-medium text-gray-700 whitespace-nowrap flex-shrink-0">
               {filteredInvoices.length} total
             </span>
           </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
+          <div className="flex items-center gap-2 w-full sm:w-auto">
+            <div className="relative flex-1 sm:flex-none">
               <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
               <input 
                 type="text" 
@@ -316,7 +316,7 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
                   setSearchQuery(e.target.value)
                   setCurrentPage(1)
                 }}
-                className="pl-9 pr-3 py-1.5 border border-gray-300 rounded-md text-sm outline-none focus:border-indigo-500" 
+                className="w-full pl-9 pr-3 py-1.5 border border-gray-300 rounded-md text-sm outline-none focus:border-indigo-500" 
               />
             </div>
             <DropdownMenu>
@@ -333,8 +333,8 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
             </DropdownMenu>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full text-sm text-left">
+        <div className="overflow-x-auto w-full">
+          <table className="w-full text-sm text-left whitespace-nowrap">
             <thead className="bg-white text-gray-500 font-medium border-b border-gray-100">
               <tr>
                 <th className="px-6 py-3 font-medium">Invoice #</th>
@@ -451,8 +451,8 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
           <div className="px-6 py-4 border-b border-gray-100 bg-gray-50/50">
             <h3 className="font-bold text-gray-900">Top Paying Customers</h3>
           </div>
-          <div className="p-0">
-            <table className="w-full text-sm text-left">
+          <div className="p-0 overflow-x-auto w-full">
+            <table className="w-full text-sm text-left whitespace-nowrap">
               <thead className="bg-white text-gray-400 text-xs uppercase font-medium border-b border-gray-100">
                 <tr>
                   <th className="px-6 py-2">Rank</th>
@@ -462,7 +462,47 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100">
-                {invoices.slice(0,5).map((cust: any, i: number) => (<tr key={i} className="hover:bg-gray-50"><td colSpan={4} className="px-6 py-3 text-gray-500">Database data rendered here</td></tr>))}
+                {(() => {
+                  const customerTotals = invoices.reduce((acc: any, inv: any) => {
+                    if (inv.status === 'Paid' || inv.status === 'PAID') {
+                      const userId = inv.user?.id || inv.user?.email || 'unknown';
+                      if (!acc[userId]) {
+                        acc[userId] = {
+                          name: inv.user?.name || 'Unknown User',
+                          plan: inv.plan,
+                          total: 0
+                        };
+                      }
+                      acc[userId].total += inv.amount;
+                    }
+                    return acc;
+                  }, {});
+                  
+                  const topCustomers = Object.values(customerTotals)
+                    .sort((a: any, b: any) => b.total - a.total)
+                    .slice(0, 5);
+
+                  if (topCustomers.length === 0) {
+                    return <tr><td colSpan={4} className="px-6 py-4 text-center text-gray-500">No paid customers found</td></tr>;
+                  }
+
+                  return topCustomers.map((cust: any, i: number) => (
+                    <tr key={i} className="hover:bg-gray-50/50 transition-colors">
+                      <td className="px-6 py-3 font-medium text-gray-500">#{i + 1}</td>
+                      <td className="px-6 py-3 font-medium text-gray-900">{cust.name}</td>
+                      <td className="px-6 py-3">
+                        <span className={`inline-flex items-center rounded-md px-2 py-0.5 text-xs font-semibold ${
+                          cust.plan === 'ENTERPRISE' ? 'bg-purple-100 text-purple-700' : 
+                          cust.plan === 'PRO' ? 'bg-indigo-100 text-indigo-700' : 
+                          'bg-gray-100 text-gray-700'
+                        }`}>
+                          {cust.plan}
+                        </span>
+                      </td>
+                      <td className="px-6 py-3 font-bold text-gray-900 text-right">{formatCurrency(cust.total, settings.currency)}</td>
+                    </tr>
+                  ));
+                })()}
               </tbody>
             </table>
           </div>
@@ -477,7 +517,35 @@ export default function RevenueClient({ invoices, totalRevenue, mrr, arr, arpu, 
             </span>
           </div>
           <div className="divide-y divide-gray-100">
-            {invoices.filter((i: any) => i.status === "Failed").slice(0,3).map((fp: any, i: number) => (<div key={i} className="p-4 flex items-center justify-between hover:bg-gray-50 transition-colors"><div className="text-gray-500">Failed Invoice: {fp.id}</div></div>))}
+            {(() => {
+              const failedInvoices = invoices.filter((i: any) => i.status === "Failed" || i.status === "FAILED").slice(0, 3);
+              
+              if (failedInvoices.length === 0) {
+                return <div className="p-6 text-center text-gray-500">No recent failed payments</div>;
+              }
+
+              return failedInvoices.map((fp: any, i: number) => {
+                const avatarSeed = (fp.user?.name || "U").substring(0, 2).toUpperCase();
+                return (
+                  <div key={i} className="p-4 flex items-center justify-between hover:bg-gray-50/50 transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={`https://api.dicebear.com/7.x/initials/svg?seed=${avatarSeed}`} />
+                        <AvatarFallback>{avatarSeed}</AvatarFallback>
+                      </Avatar>
+                      <div>
+                        <div className="font-medium text-gray-900">{fp.user?.name || 'Unknown User'}</div>
+                        <div className="text-xs text-gray-500 font-mono">INV-{fp.id.substring(0, 6)}</div>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="font-bold text-gray-900">{formatCurrency(fp.amount, settings.currency)}</div>
+                      <div className="text-xs text-red-600 font-medium">Declined</div>
+                    </div>
+                  </div>
+                );
+              });
+            })()}
           </div>
         </div>
 

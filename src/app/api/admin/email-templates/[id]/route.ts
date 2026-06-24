@@ -5,7 +5,7 @@ import { EmailTemplate } from "@/models/EmailTemplate";
 
 export async function DELETE(
   req: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const session = await auth();
@@ -15,7 +15,8 @@ export async function DELETE(
 
     await dbConnect();
     
-    const deletedTemplate = await EmailTemplate.findByIdAndDelete(params.id);
+    const { id } = await params;
+    const deletedTemplate = await EmailTemplate.findByIdAndDelete(id);
     
     if (!deletedTemplate) {
       return new NextResponse("Not Found", { status: 404 });

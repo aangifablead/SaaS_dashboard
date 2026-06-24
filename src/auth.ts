@@ -7,6 +7,8 @@ import clientPromise from "./lib/mongodb"
 import { compare } from "bcryptjs"
 import dbConnect from "./lib/mongoose"
 import { User } from "./models/User"
+import { LoginEvent } from "./models/LoginEvent"
+import { headers } from "next/headers"
 
 export const { handlers, signIn, signOut, auth } = NextAuth({
   adapter: MongoDBAdapter(clientPromise),
@@ -67,4 +69,40 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
       return session
     },
   },
+  events: {
+    async signIn({ user }) {
+      try {
+        const headersList = await headers();
+        const ipAddress = headersList.get("x-forwarded-for") || "127.0.0.1";
+        const userAgent = headersList.get("user-agent") || "Unknown Device";
+        const city = headersList.get("x-vercel-ip-city");
+        const country = headersList.get("x-vercel-ip-country");
+        
+        let os = "Unknown OS";
+        if (userAgent.includes("Mac OS X")) os = "Mac OS";
+        else if (userAgent.includes("Windows")) os = "Windows";
+        else if (userAgent.includes("iPhone")) os = "iPhone";
+        else if (userAgent.includes("Android")) os = "Android";
+        else if (userAgent.includes("Linux")) os = "Linux";
+
+        let browser = "Browser";
+        if (userAgent.includes("Chrome") || userAgent.includes("CriOS")) browser = "Chrome";
+        else if (userAgent.includes("Safari")) browser = "Safari";
+        else if (userAgent.includes("Firefox")) browser = "Firefox";
+
+        const device = `${browser} on ${os}`;
+        const location = city && country ? `${city}, ${country}` : "Unknown Location";
+
+        await dbConnect();
+        await LoginEvent.create({
+          userId: user.id,
+          device,
+          location,
+          ipAddress
+        });
+      } catch (e) {
+        console.error("Failed to log sign in event", e);
+      }
+    }
+  }
 })

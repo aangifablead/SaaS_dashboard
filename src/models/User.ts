@@ -12,7 +12,19 @@ export interface IUser extends Document {
   stripeSubId?: string;
   planExpiresAt?: Date;
   isActive: boolean;
+  phone?: string;
+  company?: string;
+  bio?: string;
   organizationId?: mongoose.Types.ObjectId;
+  usageCounters?: {
+    apiCalls: number;
+    storageUsed: number;
+    teamMembers: number;
+  };
+  billingCycleStart?: Date;
+  nextBillingDate?: Date;
+  paymentMethodId?: string;
+  cancelAtPeriodEnd?: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -30,6 +42,18 @@ const UserSchema: Schema<IUser> = new Schema(
     stripeSubId: { type: String, unique: true, sparse: true },
     planExpiresAt: { type: Date },
     isActive: { type: Boolean, default: true },
+    phone: { type: String },
+    company: { type: String },
+    bio: { type: String },
+    usageCounters: {
+      apiCalls: { type: Number, default: 0 },
+      storageUsed: { type: Number, default: 0 },
+      teamMembers: { type: Number, default: 1 },
+    },
+    billingCycleStart: { type: Date },
+    nextBillingDate: { type: Date },
+    paymentMethodId: { type: String },
+    cancelAtPeriodEnd: { type: Boolean, default: false },
     organizationId: { type: Schema.Types.ObjectId, ref: "Organization" },
   },
   { timestamps: true }

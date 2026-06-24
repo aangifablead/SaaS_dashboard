@@ -4,8 +4,23 @@ import { Badge } from "@/components/ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 import { Calendar, ChevronDown, MousePointerClick, Eye, Clock, ArrowUpRight } from "lucide-react"
 import { TrafficOverviewChart, SignupsChart, TrafficSourcesChart } from "@/components/analytics-charts"
+import { DatePickerWithRange } from "@/components/date-range-picker"
+import Link from "next/link"
+import { getAnalyticsData } from "@/lib/analytics"
 
-export default function AnalyticsPage() {
+export default async function AnalyticsPage(props: { searchParams: Promise<{ range?: string }> }) {
+  const searchParams = await props.searchParams;
+  const range = searchParams?.range || "30d";
+
+  const data = await getAnalyticsData(range);
+  
+  const stats = [
+    { title: "Total Sessions", value: data.stats.totalSessions.value, change: data.stats.totalSessions.change, isPositive: data.stats.totalSessions.isPositive, icon: MousePointerClick, color: "text-primary", bg: "bg-primary/10" },
+    { title: "Pageviews", value: data.stats.pageviews.value, change: data.stats.pageviews.change, isPositive: data.stats.pageviews.isPositive, icon: Eye, color: "text-success", bg: "bg-success/10" },
+    { title: "Bounce Rate", value: data.stats.bounceRate.value, change: data.stats.bounceRate.change, isPositive: data.stats.bounceRate.isPositive, icon: ArrowUpRight, color: "text-warning", bg: "bg-warning/10" },
+    { title: "Avg Session Duration", value: data.stats.avgSessionDuration.value, change: data.stats.avgSessionDuration.change, isPositive: data.stats.avgSessionDuration.isPositive, icon: Clock, color: "text-[#a855f7]", bg: "bg-[#faf5ff]" },
+  ];
+
   return (
     <div className="flex flex-col gap-8 pb-8">
       {/* HEADER */}
@@ -18,25 +33,21 @@ export default function AnalyticsPage() {
         </div>
         <div className="flex items-center gap-3">
           <div className="flex items-center bg-card border border-border rounded-lg shadow-sm p-1">
-            <Button variant="ghost" size="sm" className="h-8 text-muted-foreground hover:text-foreground">Last 7d</Button>
-            <Button variant="ghost" size="sm" className="h-8 bg-muted text-foreground font-medium shadow-sm">30d</Button>
-            <Button variant="ghost" size="sm" className="h-8 text-muted-foreground hover:text-foreground">90d</Button>
+            <Link href="?range=7d">
+              <Button variant="ghost" size="sm" className={`h-8 ${range === '7d' ? 'bg-muted text-foreground font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>Last 7d</Button>
+            </Link>
+            <Link href="?range=30d">
+              <Button variant="ghost" size="sm" className={`h-8 ${range === '30d' ? 'bg-muted text-foreground font-medium shadow-sm' : 'text-muted-foreground hover:text-foreground'}`}>30d</Button>
+            </Link>
+            <Link href="?range=90d"><Button variant={range === "90d" ? "default" : "ghost"} size="sm" className="h-8">90d</Button></Link>
           </div>
-          <Button variant="outline" className="gap-2 bg-card border-border shadow-sm">
-            <Calendar className="h-4 w-4 text-muted-foreground" />
-            Custom
-          </Button>
+          <DatePickerWithRange />
         </div>
       </div>
 
       {/* ROW 1: STATS CARDS */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
-        {[
-          { title: "Total Sessions", value: "84,320", change: "+12.5%", isPositive: true, icon: MousePointerClick, color: "text-primary", bg: "bg-primary/10" },
-          { title: "Pageviews", value: "245,890", change: "+24.2%", isPositive: true, icon: Eye, color: "text-success", bg: "bg-success/10" },
-          { title: "Bounce Rate", value: "42.3%", change: "-2.1%", isPositive: true, icon: ArrowUpRight, color: "text-warning", bg: "bg-warning/10" },
-          { title: "Avg Session Duration", value: "2m 45s", change: "-0.5%", isPositive: false, icon: Clock, color: "text-[#a855f7]", bg: "bg-[#faf5ff]" },
-        ].map((stat, i) => (
+        {stats.map((stat, i) => (
           <Card key={i} className="shadow-sm">
             <CardContent className="p-6">
               <div className="flex justify-between items-start">
@@ -70,7 +81,7 @@ export default function AnalyticsPage() {
           </Button>
         </CardHeader>
         <CardContent className="pt-4">
-          <TrafficOverviewChart />
+          <TrafficOverviewChart data={data.trafficData} />
         </CardContent>
       </Card>
 
@@ -82,7 +93,7 @@ export default function AnalyticsPage() {
             <CardTitle className="text-base font-semibold">Signups by Month</CardTitle>
           </CardHeader>
           <CardContent>
-            <SignupsChart />
+            <SignupsChart data={data.signupsData} />
           </CardContent>
         </Card>
 
@@ -92,7 +103,7 @@ export default function AnalyticsPage() {
             <CardTitle className="text-base font-semibold">Top Traffic Sources</CardTitle>
           </CardHeader>
           <CardContent>
-            <TrafficSourcesChart />
+            <TrafficSourcesChart data={data.sourcesData} />
           </CardContent>
         </Card>
       </div>
@@ -116,15 +127,7 @@ export default function AnalyticsPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {[
-                    { url: "/", views: "45,231", bounce: "32.1%", time: "1m 45s" },
-                    { url: "/pricing", views: "24,102", bounce: "45.2%", time: "2m 10s" },
-                    { url: "/blog/launch", views: "18,492", bounce: "58.4%", time: "4m 20s" },
-                    { url: "/docs/api", views: "12,941", bounce: "22.5%", time: "5m 15s" },
-                    { url: "/about", views: "8,234", bounce: "41.2%", time: "1m 12s" },
-                    { url: "/contact", views: "4,102", bounce: "35.8%", time: "0m 55s" },
-                    { url: "/features", views: "3,892", bounce: "40.1%", time: "1m 30s" },
-                  ].map((row, i) => (
+                  {data.topPages.map((row, i) => (
                     <TableRow key={i} className="hover:bg-accent/50 border-border cursor-pointer transition-colors">
                       <TableCell className="py-3 pl-6 font-medium text-sm text-foreground">{row.url}</TableCell>
                       <TableCell className="text-right text-sm">{row.views}</TableCell>
@@ -154,11 +157,7 @@ export default function AnalyticsPage() {
               </div>
               
               <div className="w-full space-y-4 max-w-sm">
-                {[
-                  { country: "India", flag: "🇮🇳", value: "45%", color: "bg-primary" },
-                  { country: "United States", flag: "🇺🇸", value: "23%", color: "bg-success" },
-                  { country: "United Kingdom", flag: "🇬🇧", value: "12%", color: "bg-[#a855f7]" },
-                ].map((item, i) => (
+                {data.usersByCountry.map((item, i) => (
                   <div key={i} className="flex items-center gap-4">
                     <span className="text-lg">{item.flag}</span>
                     <div className="flex-1">
