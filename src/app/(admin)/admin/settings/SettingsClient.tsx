@@ -83,13 +83,53 @@ export default function SettingsClient({ initialSettings }: { initialSettings: R
     setTimeout(() => setToast(null), 3000)
   }
 
-  const handleDangerAction = () => {
+  const handleDangerAction = async () => {
     if (dangerAction === "reset" && dangerConfirmText !== "RESET") {
       return
     }
+    
+    const actionToRun = dangerAction;
     setDangerAction(null)
     setDangerConfirmText("")
-    showToast("Action completed successfully")
+    
+    try {
+      const res = await fetch("/api/admin/critical-actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: actionToRun })
+      });
+      
+      if (res.ok) {
+        const data = await res.json();
+        showToast(data.message || "Action completed successfully");
+        if (actionToRun === "reset") {
+          setTimeout(() => window.location.reload(), 2000);
+        }
+      } else {
+        showToast("Error: Action failed to execute");
+      }
+    } catch (e) {
+      showToast("Error executing action");
+    }
+  }
+
+  const handleExportData = async () => {
+    showToast("Triggering export...");
+    try {
+      const res = await fetch("/api/admin/critical-actions", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action: "export_data" })
+      });
+      if (res.ok) {
+        const data = await res.json();
+        showToast(data.message || "Export started. Check your email.");
+      } else {
+        showToast("Export failed");
+      }
+    } catch (e) {
+      showToast("Error triggering export");
+    }
   }
 
   const handleImageUpload = (e: React.ChangeEvent<HTMLInputElement>, field: 'logo' | 'favicon') => {
@@ -596,7 +636,7 @@ export default function SettingsClient({ initialSettings }: { initialSettings: R
                   title="Export All Data"
                   description="Download a complete CSV backup of the entire database including all users, payments, and settings."
                   buttonText="Export Data"
-                  onClick={() => showToast("Export started. Check your email for the download link.")}
+                  onClick={handleExportData}
                 />
                 
                 <div className="border-t border-gray-100" />

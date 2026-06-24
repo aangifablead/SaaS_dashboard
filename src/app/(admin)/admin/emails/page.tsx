@@ -1,5 +1,6 @@
 import dbConnect from "@/lib/mongoose"
 import { EmailHistory } from "@/models/EmailHistory"
+import { EmailTemplate } from "@/models/EmailTemplate"
 import EmailsClient from "./EmailsClient"
 
 export default async function EmailsPage() {
@@ -27,7 +28,19 @@ export default async function EmailsPage() {
     };
   })
 
+  const emailTemplatesRaw = await EmailTemplate.find().sort({ createdAt: -1 }).lean()
+  const formattedTemplates = emailTemplatesRaw.map((t: any) => ({
+    id: t._id.toString(),
+    name: t.name,
+    desc: t.desc,
+    subject: t.subject,
+    body: t.body,
+    icon: t.icon,
+    color: t.color,
+    bg: t.bg
+  }))
+
   return (
-    <EmailsClient initialHistory={formattedHistory} />
+    <EmailsClient initialHistory={formattedHistory} initialTemplates={formattedTemplates} />
   )
 }

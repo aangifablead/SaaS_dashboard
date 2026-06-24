@@ -100,25 +100,32 @@ const emailTemplate = (content: string, title: string) => `
 </html>
 `;
 
-const templates = [
-  { icon: PartyPopper, color: "text-indigo-600", bg: "bg-indigo-50", name: "Welcome Email", desc: "Sent automatically to new users upon registration.", subject: "Welcome to our platform!", body: "Hi [User Name],\n\nWelcome aboard! We're thrilled to have you here at [Organization Name].\n\nIf you have any questions, feel free to reach out to our team at any time.\n\nBest,\nThe Team" },
-  { icon: CreditCard, color: "text-emerald-600", bg: "bg-emerald-50", name: "Payment Confirmation", desc: "Sent when a subscription charge succeeds.", subject: "Payment Successful - Thank You!", body: "Hi [User Name],\n\nYour payment for the [Plan Name] plan has been successfully processed.\n\nAmount: $29.00\nDate: [Current Date]\n\nThank you for your business!" },
-  { icon: AlertTriangle, color: "text-red-600", bg: "bg-red-50", name: "Payment Failed", desc: "Sent when a subscription charge fails to process.", subject: "Action Required: Payment Failed", body: "Hi [User Name],\n\nWe couldn't process your recent payment for [Organization Name]. Please update your billing information to ensure uninterrupted service.\n\nThanks,\nBilling Team" },
-  { icon: Megaphone, color: "text-blue-600", bg: "bg-blue-50", name: "Product Announcement", desc: "Template for releasing new features or updates.", subject: "Exciting New Features!", body: "Hi [User Name],\n\nWe just launched some highly requested features!\n\nHere is what's new:\n- Feature 1\n- Feature 2\n\nLog in now to check them out!" }
+const DEFAULT_TEMPLATES = [
+  { id: 'default-1', icon: 'PartyPopper', color: "text-indigo-600", bg: "bg-indigo-50", name: "Welcome Email", desc: "Sent automatically to new users upon registration.", subject: "Welcome to our platform!", body: "Hi [User Name],\n\nWelcome aboard! We're thrilled to have you here at [Organization Name].\n\nIf you have any questions, feel free to reach out to our team at any time.\n\nBest,\nThe Team" },
+  { id: 'default-2', icon: 'CreditCard', color: "text-emerald-600", bg: "bg-emerald-50", name: "Payment Confirmation", desc: "Sent when a subscription charge succeeds.", subject: "Payment Successful - Thank You!", body: "Hi [User Name],\n\nYour payment for the [Plan Name] plan has been successfully processed.\n\nAmount: $29.00\nDate: [Current Date]\n\nThank you for your business!" },
+  { id: 'default-3', icon: 'AlertTriangle', color: "text-red-600", bg: "bg-red-50", name: "Payment Failed", desc: "Sent when a subscription charge fails to process.", subject: "Action Required: Payment Failed", body: "Hi [User Name],\n\nWe couldn't process your recent payment for [Organization Name]. Please update your billing information to ensure uninterrupted service.\n\nThanks,\nBilling Team" },
+  { id: 'default-4', icon: 'Megaphone', color: "text-blue-600", bg: "bg-blue-50", name: "Product Announcement", desc: "Template for releasing new features or updates.", subject: "Exciting New Features!", body: "Hi [User Name],\n\nWe just launched some highly requested features!\n\nHere is what's new:\n- Feature 1\n- Feature 2\n\nLog in now to check them out!" }
 ]
 
-export default function EmailsClient({ initialHistory }: { initialHistory: any[] }) {
+export default function EmailsClient({ initialHistory, initialTemplates = [] }: { initialHistory: any[], initialTemplates?: any[] }) {
   const [recipientFilter, setRecipientFilter] = useState("All Users")
   const [subject, setSubject] = useState("")
   const [body, setBody] = useState("")
   const [customEmail, setCustomEmail] = useState("")
   const [history, setHistory] = useState(initialHistory)
+  const [templates, setTemplates] = useState(initialTemplates)
   const [sending, setSending] = useState(false)
   const [cursorPos, setCursorPos] = useState<number | null>(null)
   const [statusFilter, setStatusFilter] = useState("All")
   const [selectedEmail, setSelectedEmail] = useState<any>(null)
   const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null)
   const [editingEmailId, setEditingEmailId] = useState<string | null>(null)
+  
+  const [saveTemplateModalOpen, setSaveTemplateModalOpen] = useState(false)
+  const [newTemplateName, setNewTemplateName] = useState("")
+  const [newTemplateDesc, setNewTemplateDesc] = useState("")
+  const [savingTemplate, setSavingTemplate] = useState(false)
+  
   const textareaRef = useRef<HTMLTextAreaElement>(null)
 
   const insertTag = (tag: string) => {
@@ -273,6 +280,49 @@ export default function EmailsClient({ initialHistory }: { initialHistory: any[]
       toast.error(e.message || "An error occurred while saving the draft.");
     }
     setSending(false);
+  }
+
+  const handleSaveTemplate = async () => {
+    if (!newTemplateName || !subject || !body) return;
+    setSavingTemplate(true);
+    try {
+      const res = await fetch("/api/admin/email-templates", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newTemplateName, desc: newTemplateDesc, subject, body, icon: 'FileText' })
+      });
+      if (res.ok) {
+        const savedTemplate = await res.json();
+        savedTemplate.id = savedTemplate._id;
+        toast.success("Template saved successfully!");
+        setTemplates([savedTemplate, ...templates]);
+        setSaveTemplateModalOpen(false);
+        setNewTemplateName("");
+        setNewTemplateDesc("");
+      } else {
+        toast.error("Failed to save template");
+      }
+    } catch (e: any) {
+      toast.error("Error saving template");
+    }
+    setSavingTemplate(false);
+  }
+
+  const handleDeleteTemplate = async (e: React.MouseEvent, id: string) => {
+    e.stopPropagation(); // prevent clicking the card
+    try {
+      const res = await fetch(`/api/admin/email-templates/${id}`, {
+        method: "DELETE"
+      });
+      if (res.ok) {
+        toast.success("Template deleted");
+        setTemplates(templates.filter((t: any) => t.id !== id));
+      } else {
+        toast.error("Failed to delete template");
+      }
+    } catch (err) {
+      toast.error("Error deleting template");
+    }
   }
 
   const confirmDelete = () => {
@@ -527,13 +577,16 @@ export default function EmailsClient({ initialHistory }: { initialHistory: any[]
 
           </div>
         </div>
-        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <p className="text-sm text-gray-500 flex items-center gap-2 min-w-0 w-full sm:w-auto">
+        <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+          <p className="text-sm text-gray-500 flex items-center gap-2 min-w-0 w-full xl:w-auto">
             <Users className="h-4 w-4 shrink-0" />
             <span className="shrink-0">Sending to:</span> 
             <span className="font-semibold text-gray-900 truncate" title={getRecipientCount()}>{getRecipientCount()}</span>
           </p>
-          <div className="flex gap-3 w-full sm:w-auto justify-end shrink-0">
+          <div className="flex flex-wrap gap-3 w-full xl:w-auto justify-start xl:justify-end shrink-0">
+            <button onClick={() => setSaveTemplateModalOpen(true)} disabled={sending || !subject || !body} className="px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-md text-sm font-medium hover:bg-gray-50 flex items-center justify-center shadow-sm disabled:opacity-50 flex-1 sm:flex-none">
+              <FileText className="mr-2 h-4 w-4" /> Save as Template
+            </button>
             <button onClick={handleSaveDraft} disabled={sending || !subject || !body} className="px-4 py-2 border border-gray-300 text-gray-700 bg-white rounded-md text-sm font-medium hover:bg-gray-50 flex items-center justify-center shadow-sm disabled:opacity-50 flex-1 sm:flex-none">
               <Save className="mr-2 h-4 w-4" /> Save Draft
             </button>
@@ -552,21 +605,41 @@ export default function EmailsClient({ initialHistory }: { initialHistory: any[]
             <h3 className="font-bold text-gray-900">Quick Templates</h3>
           </div>
           <div className="grid gap-4">
-            {templates.map((tpl, i) => (
+            {[...DEFAULT_TEMPLATES, ...templates].map((tpl, i) => {
+              const IconComp = tpl.icon === 'PartyPopper' ? PartyPopper 
+                : tpl.icon === 'CreditCard' ? CreditCard 
+                : tpl.icon === 'AlertTriangle' ? AlertTriangle 
+                : tpl.icon === 'Megaphone' ? Megaphone 
+                : FileText;
+              
+              const isDefault = tpl.id?.startsWith('default-');
+              
+              return (
               <div 
-                key={i} 
+                key={tpl.id || i} 
                 onClick={() => { setSubject(tpl.subject); setBody(tpl.body); }}
                 className="p-5 bg-white border border-gray-200 rounded-2xl shadow-sm hover:border-[#6366f1] hover:shadow-md transition-all group cursor-pointer relative overflow-hidden"
               >
                 {/* Subtle gradient accent line on top */}
-                <div className={`absolute top-0 left-0 right-0 h-1 ${tpl.bg} group-hover:bg-[#6366f1] transition-colors`} />
+                <div className={`absolute top-0 left-0 right-0 h-1 ${tpl.bg || 'bg-indigo-50'} group-hover:bg-[#6366f1] transition-colors`} />
                 
                 <div className="flex items-start gap-4">
-                  <div className={`p-3 rounded-xl shrink-0 ${tpl.bg} ${tpl.color} group-hover:bg-[#6366f1] group-hover:text-white transition-colors`}>
-                    <tpl.icon className="h-6 w-6" />
+                  <div className={`p-3 rounded-xl shrink-0 ${tpl.bg || 'bg-indigo-50'} ${tpl.color || 'text-indigo-600'} group-hover:bg-[#6366f1] group-hover:text-white transition-colors`}>
+                    <IconComp className="h-6 w-6" />
                   </div>
                   <div className="flex-1">
-                    <h4 className="font-bold text-gray-900 text-base group-hover:text-[#6366f1] transition-colors">{tpl.name}</h4>
+                    <div className="flex justify-between items-start">
+                      <h4 className="font-bold text-gray-900 text-base group-hover:text-[#6366f1] transition-colors pr-2">{tpl.name}</h4>
+                      {!isDefault && (
+                        <button 
+                          onClick={(e) => handleDeleteTemplate(e, tpl.id)} 
+                          className="opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition-all"
+                          title="Delete Template"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </button>
+                      )}
+                    </div>
                     <p className="text-sm text-gray-500 mt-1.5 mb-3 leading-relaxed">{tpl.desc}</p>
                     <span className="inline-flex items-center text-xs font-semibold text-[#6366f1] bg-[#eef2ff] px-2.5 py-1 rounded-md group-hover:bg-[#6366f1] group-hover:text-white transition-colors">
                       Use Template &rarr;
@@ -574,7 +647,7 @@ export default function EmailsClient({ initialHistory }: { initialHistory: any[]
                   </div>
                 </div>
               </div>
-            ))}
+            )})}
           </div>
         </div>
 
@@ -739,6 +812,52 @@ export default function EmailsClient({ initialHistory }: { initialHistory: any[]
               className="px-4 py-2 bg-red-600 text-white rounded-md text-sm font-medium hover:bg-red-700 transition-colors"
             >
               Delete
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Save Template Modal */}
+      <Dialog open={saveTemplateModalOpen} onOpenChange={setSaveTemplateModalOpen}>
+        <DialogContent className="sm:max-w-[425px] flex flex-col p-6 overflow-hidden bg-white">
+          <div className="pt-2">
+            <DialogTitle className="text-xl font-bold text-gray-900 mb-4">Save as Template</DialogTitle>
+            <div className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Template Name</label>
+                <input 
+                  type="text" 
+                  value={newTemplateName}
+                  onChange={(e) => setNewTemplateName(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                  placeholder="e.g. Welcome Series 1"
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1">Description (Optional)</label>
+                <input 
+                  type="text" 
+                  value={newTemplateDesc}
+                  onChange={(e) => setNewTemplateDesc(e.target.value)}
+                  className="w-full rounded-md border border-gray-300 px-3 py-2 text-sm focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 outline-none"
+                  placeholder="e.g. Sent to users after 3 days"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="flex justify-end gap-3 mt-6">
+            <button 
+              onClick={() => setSaveTemplateModalOpen(false)}
+              className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 transition-colors"
+            >
+              Cancel
+            </button>
+            <button 
+              onClick={handleSaveTemplate}
+              disabled={savingTemplate || !newTemplateName}
+              className="px-4 py-2 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 transition-colors disabled:opacity-50"
+            >
+              {savingTemplate ? 'Saving...' : 'Save Template'}
             </button>
           </div>
         </DialogContent>

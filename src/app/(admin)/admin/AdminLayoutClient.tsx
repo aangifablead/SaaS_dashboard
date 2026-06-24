@@ -150,7 +150,7 @@ export default function AdminLayoutClient({ children, user, platformName = "Admi
             <ExternalLink className="size-5 shrink-0" />
             View Site
           </Link>
-          <button onClick={() => signOut({ callbackUrl: '/login' })} className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-red-500/10 hover:text-red-500 transition-colors text-left">
+          <button onClick={() => signOut({ callbackUrl: '/admin/login' })} className="w-full flex items-center gap-3 px-3 py-2 rounded-md hover:bg-red-500/10 hover:text-red-500 transition-colors text-left">
             <LogOut className="size-5 shrink-0" />
             Log Out
           </button>
@@ -237,7 +237,7 @@ export default function AdminLayoutClient({ children, user, platformName = "Admi
                   <span>SMTP Settings</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/login' })} className="text-rose-600 cursor-pointer">
+                <DropdownMenuItem onClick={() => signOut({ callbackUrl: '/admin/login' })} className="text-rose-600 cursor-pointer">
                   <LogOut className="mr-2 h-4 w-4" />
                   <span>Log out</span>
                 </DropdownMenuItem>

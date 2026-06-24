@@ -60,9 +60,9 @@ export async function loginUser(formData: FormData) {
     if (error.name === "AuthError" || error.type?.includes("CredentialsSignin")) {
       return { success: false, error: "Invalid email or password" }
     }
-    // If it's a Next.js redirect error, we must re-throw it so it works
+    // If it's a Next.js redirect error, the login was successful. Return success so the client component can redirect.
     if (error.message && error.message.includes("NEXT_REDIRECT")) {
-      throw error
+      return { success: true }
     }
     return { success: false, error: "An unexpected error occurred" }
   }
