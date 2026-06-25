@@ -2,7 +2,7 @@ import dbConnect from "@/lib/mongoose";
 import { User } from "@/models/User";
 import { LoginEvent } from "@/models/LoginEvent";
 
-export async function getAnalyticsData(range: string) {
+export async function getAnalyticsData(range: string, userId?: string) {
   await dbConnect();
 
   let days = 30;
@@ -16,13 +16,22 @@ export async function getAnalyticsData(range: string) {
   const prevStartDate = new Date(startDate);
   prevStartDate.setDate(prevStartDate.getDate() - days);
 
+  const loginQuery: any = { createdAt: { $gte: startDate } };
+  const prevLoginQuery: any = { createdAt: { $gte: prevStartDate, $lt: startDate } };
+  
+  if (userId) {
+    loginQuery.userId = userId;
+    prevLoginQuery.userId = userId;
+  }
+
   // 1. Get real signups (Users)
-  const users = await User.find({ createdAt: { $gte: startDate } }).select("createdAt").lean();
-  const prevUsers = await User.countDocuments({ createdAt: { $gte: prevStartDate, $lt: startDate } });
+  const userQuery: any = { createdAt: { $gte: startDate } };
+  if (userId) userQuery._id = userId;
+  const users = await User.find(userQuery).select("createdAt").lean();
   
   // 2. Get real sessions (LoginEvents)
-  const loginEvents = await LoginEvent.find({ createdAt: { $gte: startDate } }).lean();
-  const prevLoginEvents = await LoginEvent.countDocuments({ createdAt: { $gte: prevStartDate, $lt: startDate } });
+  const loginEvents = await LoginEvent.find(loginQuery).lean();
+  const prevLoginEvents = await LoginEvent.countDocuments(prevLoginQuery);
 
   // Format Traffic Data (Daily aggregation)
   const trafficMap = new Map();
@@ -38,8 +47,7 @@ export async function getAnalyticsData(range: string) {
     const dateStr = new Date(event.createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     if (trafficMap.has(dateStr)) {
       trafficMap.get(dateStr).sessions += 1;
-      // We don't have pageview tracking, so we'll estimate 2-4 pageviews per session
-      trafficMap.get(dateStr).pageviews += Math.floor(Math.random() * 3) + 2;
+      trafficMap.get(dateStr).pageviews = 0; // No pageview tracking
     }
   });
 
@@ -108,42 +116,33 @@ export async function getAnalyticsData(range: string) {
     ];
   }
 
-  // Calculate Real Bounce Rate and Avg Session Duration
-  let totalDurationMs = 0;
-  let bounceCount = 0;
-  let totalPageviews = 0;
-
+  // Real Devices (replacing mocked Traffic Sources)
+  const deviceMap = new Map();
   loginEvents.forEach((event: any) => {
-    const durationMs = new Date(event.updatedAt).getTime() - new Date(event.createdAt).getTime();
-    totalDurationMs += durationMs;
-    // Consider a session a bounce if duration is less than 5 seconds
-    if (durationMs < 5000) {
-      bounceCount += 1;
+    if (event.device && event.device !== "Unknown Device") {
+      deviceMap.set(event.device, (deviceMap.get(event.device) || 0) + 1);
     }
   });
+  const sourcesData = Array.from(deviceMap.entries())
+    .map(([name, value]) => ({ name, value }))
+    .sort((a: any, b: any) => b.value - a.value)
+    .slice(0, 5);
 
-  totalPageviews = trafficData.reduce((acc, curr) => acc + curr.pageviews, 0);
+  // Recent Logins (replacing mocked Top Pages)
+  const topPages = [...loginEvents]
+    .sort((a: any, b: any) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    .slice(0, 5)
+    .map((event: any) => ({
+      url: event.ipAddress || "Unknown",
+      views: new Date(event.createdAt).toLocaleDateString(),
+      bounce: new Date(event.createdAt).toLocaleTimeString(),
+      time: event.device || "Unknown"
+    }));
 
-  const bounceRateNum = loginEvents.length > 0 ? (bounceCount / loginEvents.length) * 100 : 0;
-  const avgDurationMs = loginEvents.length > 0 ? totalDurationMs / loginEvents.length : 0;
-  const avgDurationMins = Math.floor(avgDurationMs / 60000);
-  const avgDurationSecs = Math.floor((avgDurationMs % 60000) / 1000);
-
-  // Dynamic Top Pages (Mocked but scaling with actual traffic)
-  const topPages = loginEvents.length > 0 ? [
-    { url: "/", views: Math.round(totalPageviews * 0.45).toLocaleString(), bounce: `${(bounceRateNum * 0.8).toFixed(1)}%`, time: `${avgDurationMins}m ${avgDurationSecs + 15}s` },
-    { url: "/pricing", views: Math.round(totalPageviews * 0.25).toLocaleString(), bounce: `${(bounceRateNum * 1.1).toFixed(1)}%`, time: `${avgDurationMins}m ${Math.max(0, avgDurationSecs - 10)}s` },
-    { url: "/dashboard", views: Math.round(totalPageviews * 0.15).toLocaleString(), bounce: `${(bounceRateNum * 0.5).toFixed(1)}%`, time: `${avgDurationMins + 1}m 10s` },
-  ] : [];
-
-  // Dynamic Sources (Mocked but scaling with actual traffic)
-  const sourcesData = loginEvents.length > 0 ? [
-    { name: 'Organic', value: 45 },
-    { name: 'Direct', value: 25 },
-    { name: 'Social', value: 15 },
-    { name: 'Referral', value: 10 },
-    { name: 'Email', value: 5 },
-  ] : [];
+  let totalPageviews = 0;
+  const bounceRateNum = 0;
+  const avgDurationMins = 0;
+  const avgDurationSecs = 0;
 
   // Calculate changes
   const sessionChangeNum = prevLoginEvents === 0 ? (loginEvents.length > 0 ? 100 : 0) : ((loginEvents.length - prevLoginEvents) / prevLoginEvents * 100);

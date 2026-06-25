@@ -7,12 +7,15 @@ import { TrafficOverviewChart, SignupsChart, TrafficSourcesChart } from "@/compo
 import { DatePickerWithRange } from "@/components/date-range-picker"
 import Link from "next/link"
 import { getAnalyticsData } from "@/lib/analytics"
+import { auth } from "@/auth"
 
 export default async function AnalyticsPage(props: { searchParams: Promise<{ range?: string }> }) {
   const searchParams = await props.searchParams;
   const range = searchParams?.range || "30d";
+  const session = await auth();
 
-  const data = await getAnalyticsData(range);
+  const data = await getAnalyticsData(range, session?.user?.id);
+  
   
   const stats = [
     { title: "Total Sessions", value: data.stats.totalSessions.value, change: data.stats.totalSessions.change, isPositive: data.stats.totalSessions.isPositive, icon: MousePointerClick, color: "text-primary", bg: "bg-primary/10" },
@@ -97,10 +100,10 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ ran
           </CardContent>
         </Card>
 
-        {/* Top Traffic Sources */}
+        {/* Top Devices */}
         <Card className="shadow-sm">
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Top Traffic Sources</CardTitle>
+            <CardTitle className="text-base font-semibold">Top Devices</CardTitle>
           </CardHeader>
           <CardContent>
             <TrafficSourcesChart data={data.sourcesData} />
@@ -110,20 +113,20 @@ export default async function AnalyticsPage(props: { searchParams: Promise<{ ran
 
       {/* ROW 4: TWO COLUMNS */}
       <div className="grid gap-4 lg:grid-cols-2">
-        {/* Top Pages Table */}
+        {/* Recent Logins Table */}
         <Card className="shadow-sm overflow-hidden flex flex-col">
           <CardHeader>
-            <CardTitle className="text-base font-semibold">Top Pages</CardTitle>
+            <CardTitle className="text-base font-semibold">Recent Logins</CardTitle>
           </CardHeader>
           <CardContent className="p-0 flex-1 flex flex-col">
             <div className="px-0 pb-6 flex-1 flex flex-col">
               <Table>
                 <TableHeader>
                   <TableRow className="border-b border-border bg-accent/30 hover:bg-accent/30">
-                    <TableHead className="text-xs font-semibold text-muted-foreground h-9 pl-6">URL</TableHead>
-                    <TableHead className="text-xs font-semibold text-muted-foreground h-9 text-right">Views</TableHead>
-                    <TableHead className="text-xs font-semibold text-muted-foreground h-9 text-right">Bounce Rate</TableHead>
-                    <TableHead className="text-xs font-semibold text-muted-foreground h-9 text-right pr-6">Avg Time</TableHead>
+                    <TableHead className="text-xs font-semibold text-muted-foreground h-9 pl-6">IP Address</TableHead>
+                    <TableHead className="text-xs font-semibold text-muted-foreground h-9 text-right">Date</TableHead>
+                    <TableHead className="text-xs font-semibold text-muted-foreground h-9 text-right">Time</TableHead>
+                    <TableHead className="text-xs font-semibold text-muted-foreground h-9 text-right pr-6">Device</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
